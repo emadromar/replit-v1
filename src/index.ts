@@ -477,7 +477,169 @@ export const analyzeProduct = onCall(
 );
 
 
-// --- Function 5: getStoreEvents ---
+// --- Function 5: generateProductDescription ---
+export const generateProductDescription = onCall({
+  secrets: ["GEMINI_KEY"],
+}, async (request: CallableRequest<{ productName: string }>) => {
+  
+  if (!request.auth) {
+    logger.error("Authentication failed: User was not authenticated.");
+    throw new HttpsError('unauthenticated', 
+      'You must be logged in to use this feature.'
+    );
+  }
+
+  const GEMINI_API_KEY = process.env.GEMINI_KEY;
+  if (!GEMINI_API_KEY) {
+    logger.error("Gemini API Key is not set in secrets.");
+    throw new HttpsError('internal', 'AI service is not configured.');
+  }
+  
+  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+  const productName = request.data.productName;
+
+  if (!productName) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Product name is required."
+    );
+  }
+
+  const sanitizedProduct = productName.substring(0, 200);
+
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash-latest",
+    safetySettings: [
+      { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    ],
+    generationConfig: {
+      temperature: 0.7,
+    },
+  });
+
+  const prompt = `
+    You are an expert product copywriter for an e-commerce store in Jordan.
+    Your tone is professional, persuasive, and customer-focused.
+    Your task is to write a compelling product description.
+
+    RULES:
+    - The description should be 2-3 paragraphs long.
+    - Highlight the key features and benefits.
+    - Use persuasive language that encourages purchase.
+    - Make it suitable for a Jordanian audience.
+    - The product is: "${sanitizedProduct}"
+    - Return ONLY the description text, no JSON or markdown formatting.
+  `;
+
+  try {
+    const result = await model.generateContent(prompt); 
+    const response = await result.response;
+    const description = response.text().trim();
+    
+    if (!description || description.length < 50) {
+      throw new Error("AI did not return a valid description");
+    }
+
+    logger.info(`Generated description for ${productName}`);
+    return { description };
+
+  } catch (error: any) {
+    logger.error("AI Generation Error:", error);
+    throw new HttpsError(
+      "internal",
+      "Failed to generate AI description. Please try again."
+    );
+  }
+});
+
+
+// --- Function 6: generateBrandColor ---
+export const generateBrandColor = onCall({
+  secrets: ["GEMINI_KEY"],
+}, async (request: CallableRequest<{ storeName: string }>) => {
+  
+  if (!request.auth) {
+    logger.error("Authentication failed: User was not authenticated.");
+    throw new HttpsError('unauthenticated', 
+      'You must be logged in to use this feature.'
+    );
+  }
+
+  const GEMINI_API_KEY = process.env.GEMINI_KEY;
+  if (!GEMINI_API_KEY) {
+    logger.error("Gemini API Key is not set in secrets.");
+    throw new HttpsError('internal', 'AI service is not configured.');
+  }
+  
+  const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+  const storeName = request.data.storeName;
+
+  if (!storeName) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Store name is required."
+    );
+  }
+
+  const sanitizedStore = storeName.substring(0, 100);
+
+  const model = genAI.getGenerativeModel({
+    model: "gemini-1.5-flash-latest",
+    safetySettings: [
+      { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    ],
+    generationConfig: {
+      responseMimeType: "application/json",
+      temperature: 0.8,
+    },
+  });
+
+  const prompt = `
+    You are a professional brand designer.
+    Based on the store name "${sanitizedStore}", suggest a professional brand color palette.
+    
+    RULES:
+    - Return a primary color that fits the brand personality.
+    - The color should be in HEX format (e.g., #4f46e5).
+    - Consider the psychology of colors and what they convey.
+    - Return ONLY a valid JSON object with a "color" field.
+    
+    Example: {"color": "#4f46e5"}
+  `;
+
+  try {
+    const result = await model.generateContent(prompt); 
+    const response = await result.response;
+    
+    const jsonText = response.text().replace(/```json/g, "").replace(/```/g, "").trim();
+    const colorData = JSON.parse(jsonText) as { color: string };
+    
+    if (!colorData.color || !colorData.color.match(/^#[0-9A-Fa-f]{6}$/)) {
+      throw new Error("AI did not return a valid hex color");
+    }
+
+    logger.info(`Generated brand color for ${storeName}: ${colorData.color}`);
+    return { color: colorData.color };
+
+  } catch (error: any) {
+    logger.error("AI Generation Error:", error);
+    throw new HttpsError(
+      "internal",
+      "Failed to generate brand color. Please try again."
+    );
+  }
+});
+
+
+// --- Function 7: getStoreEvents ---
 const simulatedLocations = ["Amman", "Irbid", "Zarqa", "Aqaba", "Salt"];
 const simulatedProducts = ["a Classic Perfume", "the new Handbag", "a Silk Scarf", "the Premium Skincare Set"];
 
