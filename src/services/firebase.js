@@ -59,16 +59,16 @@ try {
   throw new Error(`Firebase initialization failed: ${error.message}. Please check your configuration.`)
 }
 
-// If running locally, connect to emulator
-if (location.hostname === 'localhost' || location.hostname === '192.168.1.40' || location.hostname === '127.0.0.1') {
+// Only connect to emulator in TRUE local development (not in Replit)
+// Replit runs on its own domain, so this will skip the emulator connection
+const isLocalDevelopment = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') && !import.meta.env.REPL_ID
+if (isLocalDevelopment) {
   import('firebase/functions').then(({ connectFunctionsEmulator }) => {
-    // --- FIX: Dynamically set the host based on the browser's current address ---
-    // This resolves CORS errors by ensuring the emulator URL matches the app's URL.
-    const emulatorHost = (location.hostname === 'localhost' || location.hostname === '127.0.0.1') 
-        ? '127.0.0.1' 
-        : '192.168.1.40';
-    connectFunctionsEmulator(functions, emulatorHost, 5001)
+    console.log('🔧 Connecting to Firebase Functions emulator on localhost:5001')
+    connectFunctionsEmulator(functions, '127.0.0.1', 5001)
   })
+} else {
+  console.log('☁️ Using production Firebase Functions')
 }
 
 export { auth, db, storage, functions }
