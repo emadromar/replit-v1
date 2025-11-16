@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "noImplicitReturns": true,
+    "noUnusedLocals": true, // You might see warnings, but errors should be gone
+    "outDir": "lib",
+    "sourceMap": true,
+    "strict": true, // Keep strict for your code
+    "target": "es2017", // Compatible target
+    "skipLibCheck": true, // <<<--- ENSURE THIS IS TRUE
+    "resolveJsonModule": true
+  },
+  "compileOnSave": true,
+  "include": [
+    "src" // Ensure it includes your source directory
+  ]
+}

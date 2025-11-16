@@ -1,0 +1,426 @@
+// functions/index.js
+
+/**
+ * Firebase Cloud Functions
+ * All functions use the V2 SDK for Node 20/22.
+ */
+
+// V2 Imports
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onDocumentUpdated } = require("firebase-functions/v2/firestore");
+const { setGlobalOptions } = require("firebase-functions/v2");
+const logger = require("firebase-functions/logger");
+const nodemailer = require('nodemailer');
+const { initializeApp } = require("firebase-admin/app");
+const { getFirestore } = require("firebase-admin/firestore");
+
+// --- 1. Import the Google AI package ---
+const { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } = require("@google/generative-ai");
+
+// Initialize Firebase Admin SDK
+initializeApp();
+const db = getFirestore();
+
+// Set global options (e.g., region)
+setGlobalOptions({ region: "us-central1" });
+
+// --- Helper Function: Initialize Mail Transport ---
+const initializeMailTransport = () => {
+  const mailConfig = process.env.MAIL_USER ? {
+    host: process.env.MAIL_HOST || 'smtp.zoho.com',
+    port: 587,
+    secure: false, // Use TLS
+    auth: {
+      user: process.env.MAIL_USER,
+      pass: process.env.MAIL_PASS,
+    },
+  } : null;
+
+  if (!mailConfig) {
+    logger.error("Mail configuration secrets are missing. Verify MAIL_USER, MAIL_PASS, MAIL_HOST secrets are set.");
+    return null;
+  }
+  return nodemailer.createTransport(mailConfig);
+};
+
+// --- Function 1: sendEmailNotification (Unchanged) ---
+exports.sendEmailNotification = onCall({
+  secrets: ["MAIL_USER", "MAIL_PASS", "MAIL_HOST"],
+}, async (request) => {
+  
+  if (!request.auth) {
+    logger.error("Authentication failed: User was not authenticated.");
+    throw new HttpsError('unauthenticated', 
+      'The function must be called by an authenticated user.'
+    );
+  }
+
+  const mailTransport = initializeMailTransport();
+  if (!mailTransport) {
+    throw new HttpsError('internal', 'Mail secrets not loaded.');
+  }
+
+  const { to, subject, htmlBody } = request.data;
+
+  if (!to || !subject || !htmlBody) {
+    logger.error("Invalid arguments:", request.data);
+    throw new HttpsError('invalid-argument', 
+      'The function requires "to", "subject", and "htmlBody" fields.'
+    );
+  }
+  
+  const mailOptions = {
+    from: 'WebJor Platform <admin@webjor.live>',
+    to: to,
+    subject: subject,
+    html: htmlBody, 
+  };
+
+  try {
+    await mailTransport.sendMail(mailOptions);
+    logger.info(`Email successfully sent to: ${to}`);
+    return { success: true, message: 'Email sent successfully.' };
+  } catch (error) {
+    logger.error('Error sending email:', error);
+    throw new HttpsError('internal', 
+      'Failed to send email via external service.', 
+      error.toString()
+    );
+  }
+});
+
+// --- Function 2: onProductUpdate (Unchanged) ---
+exports.onProductUpdate = onDocumentUpdated({
+  document: "stores/{storeId}/products/{productId}",
+  secrets: ["MAIL_USER", "MAIL_PASS", "MAIL_HOST"],
+}, async (event) => {
+  
+  const dataBefore = event.data.before.data();
+  const dataAfter = event.data.after.data();
+
+  if (dataBefore.stock > 0 || dataAfter.stock <= 0) {
+    logger.info(`Stock for ${dataAfter.name} not eligible for alert.`);
+    return;
+  }
+
+  logger.log(`Stock alert! Product ${dataAfter.name} is back in stock.`);
+
+  const storeId = event.params.storeId;
+  const storeDoc = await db.collection("stores").doc(storeId).get();
+  const storeData = storeDoc.data();
+  
+  if (!storeData.backInStockEnabled) {
+    logger.warn(`Store ${storeData.name} does not have back-in-stock alerts enabled.`);
+    return;
+  }
+
+  const productId = event.params.productId;
+  const subsRef = db.collection("stores")
+                    .doc(storeId)
+                    .collection("products")
+                    .doc(productId)
+                    .collection("subscriptions");
+                    
+  const subsSnapshot = await subsRef.get();
+  
+  if (subsSnapshot.empty) {
+    logger.log("No subscribers found for this product.");
+    return;
+  }
+
+  const emailPromises = [];
+  const batch = db.batch();
+
+  const mailTransport = initializeMailTransport();
+  if (!mailTransport) {
+    logger.error("Mail configuration secrets are missing for onProductUpdate.");
+    return;
+  }
+  
+  subsSnapshot.forEach(doc => {
+    const sub = doc.data();
+    const email = sub.email;
+
+    logger.log(`Queueing back-in-stock email for ${email}`);
+    
+    const subject = `It's Back! ${dataAfter.name} is back in stock!`;
+    const storeUrlPath = storeData.customPath || storeData.name_slug || storeId;
+    const storeUrl = `https://webjor-b29c9.web.app/${storeUrlPath}`;
+    const htmlBody = `
+<div style="font-family: Arial, sans-serif; max-width: 600px; margin: auto;">
+  <h1 style="color: #4f46e5;">Good News!</h1>
+  <p>Hi there,</p>
+  <p>The product you wanted, <strong>${dataAfter.name}</strong>, is now back in stock at <strong>${storeData.name}</strong>!</p>
+  <p>It's available for <strong>JOD ${dataAfter.price.toFixed(2)}</strong>. Get it before it's gone again!</p>
+  <a 
+    href="${storeUrl}" 
+    style="display: inline-block; padding: 12px 20px; margin-top: 20px; background-color: #4f46e5; color: white; text-decoration: none; border-radius: 5px; font-weight: bold;"
+  >
+    Go to Store
+  </a>
+</div>
+`;
+    
+    const mailOptions = {
+      from: process.env.MAIL_USER,
+      to: email,
+      subject: subject,
+      html: htmlBody,
+    };
+
+    const emailPromise = mailTransport.sendMail(mailOptions)
+      .then(() => {
+        logger.log(`Successfully queued email to ${email}`);
+      })
+      .catch((err) => {
+        logger.error(`Failed to send email to ${email}:`, err.message);
+      });
+
+    emailPromises.push(emailPromise);
+    batch.delete(doc.ref);
+  });
+
+  await Promise.all(emailPromises);
+  await batch.commit();
+
+  logger.log(`Successfully sent ${emailPromises.length} stock alerts and cleared subscriptions.`);
+  return;
+});
+
+
+// --- Function 3: generateInstagramCaptions (This is the 100% correct code) ---
+exports.generateInstagramCaptions = onCall({
+  secrets: ["GEMINI_KEY"], 
+}, async (request) => {
+  
+  if (!request.auth) {
+    logger.error("Authentication failed: User was not authenticated.");
+    throw new HttpsError('unauthenticated', 
+      'You must be logged in to use this feature.'
+    );
+  }
+
+  const GEMINI_API_KEY = process.env.GEMINI_KEY;
+  if (!GEMINI_API_KEY) {
+    logger.error("Gemini API Key is not set in secrets.");
+    throw new HttpsError('internal', 'AI service is not configured.');
+  }
+  
+  // This is the correct constructor
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+
+  const productName = request.data.productName;
+  const storeName = request.data.storeName || "our store";
+
+  if (!productName) {
+    throw new HttpsError(
+      "invalid-argument",
+      "Product name is required."
+    );
+  }
+
+  // This is the correct method call
+  const model = genAI.getGenerativeModel({
+    model: "gemini-pro-latest",
+    safetySettings: [
+      { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+      { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+    ],
+    generationConfig: {
+      responseMimeType: "application/json",
+    },
+  });
+
+  const prompt = `
+    You are an expert social media marketer for a small business in Jordan.
+    Your tone is exciting, friendly, and persuasive.
+    Your task is to generate 3 short, catchy Instagram captions for a product.
+
+    RULES:
+    - Each caption must be bilingual (English and Arabic).
+    - Each caption must include 2-3 relevant hashtags for Jordan (like #Amman, #Jordan, #ShopLocalJO).
+    - Each caption must mention the store name: "${storeName}"
+    - The product is: "${productName}"
+    - You MUST return ONLY a valid JSON array of strings, like ["caption 1", "caption 2", "caption 3"].
+  `;
+
+  try {
+    // This is the correct way to pass the prompt
+    const result = await model.generateContent(prompt); 
+    const response = await result.response;
+    
+    const jsonText = response.text().replace(/```json/g, "").replace(/```/g, "").trim();
+    const captions = JSON.parse(jsonText);
+    
+    return { captions };
+
+  } catch (error) {
+    console.error("AI Generation Error:", error);
+    throw new HttpsError(
+      "internal",
+      "Failed to generate AI captions. Please try again."
+    );
+  }
+});
+
+// ... (after your generateInstagramCaptions function)
+
+/**
+ * =================================================================
+ * "WHY NO ONE BUYS" PRODUCT ANALYZER ENDPOINT
+ * =================================================================
+ * Analyzes a product and returns a list of "sales leaks".
+ * Gated by plan.
+ */
+exports.analyzeProduct = onCall(
+  { secrets: ["GEMINI_KEY"], cors: "*" }, // Re-uses the same secret, though not needed for this logic
+  async (request) => {
+    // --- 1. Get data & auth ---
+    // NOTE: In production, you'd re-verify auth context for security
+    // const uid = request.auth.uid;
+    const { product, planId, store } = request.data;
+    
+    if (!product) {
+      throw new HttpsError("invalid-argument", "No product data provided.");
+    }
+
+    const issues = [];
+
+    // --- 2. Run Diagnostic Rules ---
+    
+    // Description Check
+    const descLength = product.description ? product.description.length : 0;
+    if (descLength === 0) {
+      issues.push({ 
+        id: 'desc_empty', 
+        text: 'Your product has no description. Customers need details to feel confident.',
+        fix: 'Write a description that answers questions and explains the benefits.',
+        fixLink: `/dashboard/products?edit=${product.id}`
+      });
+    } else if (descLength < 100) {
+      issues.push({ 
+        id: 'desc_short', 
+        text: 'Your description is very short. This can feel unprofessional and miss key sales points.',
+        fix: 'Expand your description. What does it feel like? Who is it for?',
+        fixLink: `/dashboard/products?edit=${product.id}`
+      });
+    }
+
+    // Image Check (Assuming 1 image for now, you can expand this)
+    if (!product.imageUrl) {
+      issues.push({ 
+        id: 'no_image', 
+        text: "You have no product image. This is the #1 reason for 'no sales'.",
+        fix: 'Upload a high-quality main product image immediately.',
+        fixLink: `/dashboard/products?edit=${product.id}`
+      });
+    }
+    // You could add: else if (product.imageUrls.length < 3) { ... }
+
+    // Price Check
+    if (!product.price || product.price <= 0) {
+      issues.push({ 
+        id: 'no_price', 
+        text: 'Your product has no price. Customers cannot buy it.',
+        fix: 'Set a price for this product.',
+        fixLink: `/dashboard/products?edit=${product.id}`
+      });
+    }
+
+    // --- 3. Psychological & Trust Signal Checks (GATED) ---
+    if (planId === 'free') {
+      issues.push({ 
+        id: 'ncl_locked', 
+        text: "Sales Leak: No 'Social Proof' is active. New visitors don't trust your store.",
+        fix: "Upgrade to Basic to show live popups like 'Someone in Amman bought this' to build instant trust.",
+        fixLink: `/dashboard/marketing?tab=signals`
+      });
+      issues.push({ 
+        id: 'reviews_locked', 
+        text: "Sales Leak: No 'Customer Reviews'. 90% of shoppers read reviews before buying.",
+        fix: "Upgrade to Pro to unlock Customer Reviews and let your customers sell for you.",
+        fixLink: `/dashboard/marketing?tab=trust`
+      });
+    }
+    
+    if (planId === 'basic') {
+      issues.push({ 
+        id: 'urgency_locked', 
+        text: "Missed Opportunity: No 'Urgency' is active. Customers have no reason to 'buy now'.",
+        fix: "Upgrade to Pro to show 'Only 3 left!' and 'Selling Fast' badges to create urgency.",
+        fixLink: `/dashboard/marketing?tab=urgency`
+      });
+    }
+
+    return { issues };
+  }
+);
+
+
+/**
+ * =================================================================
+ * LIVE SHOPPER SIGNALS ENDPOINT
+ * =================================================================
+ * Simulates a log of store events to make new stores feel alive.
+ * This is zero-cost (no database reads).
+ */
+const simulatedLocations = ["Amman", "Irbid", "Zarqa", "Aqaba", "Salt"];
+const simulatedProducts = ["a Classic Perfume", "the new Handbag", "a Silk Scarf", "the Premium Skincare Set"];
+
+exports.getStoreEvents = onCall(
+  { cors: "*" }, 
+  (request) => {
+    // NOTE: In a real app, you'd fetch this from a real 'events' collection.
+    // We are simulating it to be low-cost and instant-on.
+    
+    // 1. Get the store's plan
+    const { planId, storeName } = request.data;
+
+    // 2. Free plan gets NO events. This is a "pain" point.
+    if (planId === 'free') {
+      return { events: [] };
+    }
+
+    // 3. Basic & Pro get simulated events
+    const events = [];
+    const eventCount = planId === 'pro' ? 15 : 7; // Pro gets more "activity"
+
+    for (let i = 0; i < eventCount; i++) {
+      const eventType = Math.random() > 0.3 ? 'VIEW' : (Math.random() > 0.5 ? 'ADD_TO_CART' : 'PURCHASE');
+      const location = simulatedLocations[Math.floor(Math.random() * simulatedLocations.length)];
+      const product = simulatedProducts[Math.floor(Math.random() * simulatedProducts.length)];
+      
+      let message = `Someone in ${location} is viewing ${product}`;
+      if (eventType === 'ADD_TO_CART') {
+        message = `Someone in ${location} just added ${product} to their cart.`;
+      }
+      if (eventType === 'PURCHASE') {
+        message = `Sale! ${product} just sold to someone in ${location}.`;
+      }
+      
+      events.push({
+        id: `sim_${i}`,
+        type: eventType,
+        message: message,
+        location: location,
+        productName: product,
+        timestamp: new Date(Date.now() - i * Math.floor(Math.random() * 60000) - 10000)
+      });
+    }
+
+    // Pro plan gets a "Trusted by" badge count
+    let trustedByCount = 0;
+    if (planId === 'pro') {
+      trustedByCount = 50 + Math.floor(Math.random() * 150); // Simulated count
+    } else if (planId === 'basic') {
+      trustedByCount = 5 + Math.floor(Math.random() * 20); // Basic gets a smaller one
+    }
+
+    return { 
+      events: events.sort((a, b) => a.timestamp - b.timestamp),
+      trustedByCount: trustedByCount
+    };
+  }
+);

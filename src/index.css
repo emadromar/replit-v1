@@ -1,0 +1,58 @@
+/* src/index.css */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f9fafb; /* Tailwind's gray-50 */
+    color: #1f2937; /* Tailwind's gray-800 */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+@layer components {
+  /* This is the main "card" style used everywhere */
+  .card {
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm;
+  }
+  
+  /* A subtle hover effect for cards */
+  .card-hover {
+     @apply transition-all duration-200 hover:shadow-md hover:border-gray-300;
+  }
+
+  /* --- THIS IS THE FIX FOR YOUR BUTTONS --- */
+
+  /* 1. Primary Button (e.g., "Add New Product") */
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-semibold text-white shadow-sm transition-all;
+    @apply bg-primary-700 hover:bg-primary-800; /* Uses colors from your tailwind.config.js */
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  /* 2. Secondary Button (e.g., "Edit") */
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-3 py-2 rounded-lg font-semibold text-gray-700 shadow-sm transition-all;
+    @apply bg-gray-100 hover:bg-gray-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+    @apply disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  /* 3. Danger/Delete Button (e.g., "Delete") */
+  .btn-secondary-danger {
+    @apply inline-flex items-center justify-center px-3 py-2 rounded-lg font-semibold text-gray-700 shadow-sm transition-all;
+    @apply bg-gray-100 hover:bg-red-100 hover:text-red-600; /* Changes to red on hover */
+    @apply focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2;
+  }
+  
+  /* 4. A new "Locked" button style for upgrades */
+  .btn-locked {
+    @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-semibold text-primary-700 shadow-sm transition-all;
+    @apply bg-primary-50 hover:bg-primary-100; /* A light, clean look */
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2;
+  }
+}
