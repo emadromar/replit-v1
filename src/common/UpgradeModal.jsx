@@ -253,7 +253,7 @@ export function UpgradeModal({
                 <p className="text-xs text-gray-700">
                   Please transfer{' '}
                   <strong>
-                    {PLAN_DETAILS[selectedPlanId]?.price.split('/')[0]} JOD
+                    {PLAN_DETAILS[selectedPlanId]?.price.split('/')[0]} ${CURRENCY_CODE}
                   </strong>{' '}
                   via CLIQ to:
                 </p>

@@ -235,7 +235,7 @@ export function AdminPage({ showError, showSuccess }) {
           />
           <AdminStatCard 
             title="Total Monthly Revenue" 
-            value={`JOD ${businessStats.totalMonthlyRevenue}`}
+            value={`${CURRENCY_CODE} ${businessStats.totalMonthlyRevenue}`}
             icon={DollarSign} 
             colorClass="text-alert-success"
           />

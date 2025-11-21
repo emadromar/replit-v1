@@ -156,7 +156,7 @@ export function DashboardNav({ store, user, db, showError, showSuccess, isAdmin 
             <AppNavLink to="/dashboard">
               <LayoutDashboard className="w-4 h-4 mr-2" />
               Dashboard
-          _ </AppNavLink>
+          </AppNavLink>
             <AppNavLink to="/dashboard/orders">
               <ShoppingBag className="w-4 h-4 mr-2" />
               Orders

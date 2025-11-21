@@ -1,0 +1,261 @@
+{
+  "description": "The application follows a component-based architecture, with the Root Application serving as the primary orchestrator, setting up global contexts and routing. The Routing Module is responsible for navigating between different Page Components, which represent distinct views of the application. These pages integrate Layout Components for consistent structural elements and compose Shared UI Components for reusable UI elements. State Management (Contexts) provides a centralized mechanism for managing application-wide state, which Page Components interact with for data and actions. All external data interactions, including API calls and Firebase operations, are handled by the API & Firebase Services component, which can be utilized by both Page Components and State Management (Contexts). This structure promotes modularity, reusability, and a clear separation of concerns, facilitating maintainability and scalability.",
+  "components": [
+    {
+      "name": "Root Application",
+      "description": "The primary entry point and orchestrator of the entire application. It initializes global contexts, sets up routing, and defines the top-level layout structure.",
+      "referenced_source_code": [
+        {
+          "qualified_name": "src/main.jsx",
+          "reference_file": "src\\main.jsx",
+          "reference_start_line": null,
+          "reference_end_line": null
+        },
+        {
+          "qualified_name": "src/App.jsx",
+          "reference_file": "src\\App.jsx",
+          "reference_start_line": null,
+          "reference_end_line": null
+        }
+      ],
+      "assigned_files": [
+        "src\\App.jsx",
+        "src\\main.jsx"
+      ],
+      "can_expand": true
+    },
+    {
+      "name": "Routing Module",
+      "description": "Manages client-side navigation, mapping URL paths to specific application views (Page Components). It ensures the correct component is rendered based on the current route.",
+      "referenced_source_code": [
+        {
+          "qualified_name": "src/index.ts",
+          "reference_file": "src\\index.ts",
+          "reference_start_line": null,
+          "reference_end_line": null
+        }
+      ],
+      "assigned_files": [
+        "src\\index.ts"
+      ],
+      "can_expand": true
+    },
+    {
+      "name": "Layout Components",
+      "description": "Provides consistent structural frameworks for the application's UI, including elements like headers, sidebars, and footers that persist across different pages or sections.",
+      "referenced_source_code": [
+        {
+          "qualified_name": "src/components/layout/PublicLayout.jsx",
+          "reference_file": "src\\components\\layout\\PublicLayout.jsx",
+          "reference_start_line": null,
+          "reference_end_line": null
+        },
+        {
+          "qualified_name": "src/Header.jsx",
+          "reference_file": "src\\Header.jsx",
+          "reference_start_line": null,
+          "reference_end_line": null
+        }
+      ],
+      "assigned_files": [
+        "src\\Header.jsx",
+        "src\\components\\layout\\PublicLayout.jsx"
+      ],
+      "can_expand": true
+    },
+    {
+      "name": "Page Components",
+      "description": "High-level components corresponding to specific application views or routes. They are responsible for orchestrating data fetching, managing local state, and composing smaller UI components to form a complete page.",
+      "referenced_source_code": [
+        {
+          "qualified_name": "src/AdminPage.jsx",
+          "reference_file": "src\\AdminPage.jsx",
+          "reference_start_line": null,
+          "reference_end_line": null
+        },
+        {
+          "qualified_name": "src/DashboardPage.jsx",
+          "reference_file": "src/DashboardPage.jsx",
+          "reference_start_line": null,
+          "reference_end_line": null
+        },
+        {
+          "qualified_name": "src/components/auth/AuthPage.jsx",
+          "reference_file": "src\\components\\auth\\AuthPage.jsx",
+          "reference_start_line": null,
+          "reference_end_line": null
+        }
+      ],
+      "assigned_files": [
+        "src\\AdminPage.jsx",
+        "src\\BrandsPage.jsx",
+        "src\\LandingPage.jsx",
+        "src\\OrdersPage.jsx",
+        "src\\PricingPage.jsx",
+        "src\\ProductsPage.jsx",
+        "src\\ProfilePage.jsx",
+        "src\\PublicStorePage.jsx",
+        "src\\SettingsPage.jsx",
+        "src\\components\\auth\\AuthPage.jsx",
+        "src\\components\\dashboard\\DashboardPage.jsx",
+        "src\\components\\dashboard\\MarketingPage.jsx"
+      ],
+      "can_expand": true
+    },
+    {
+      "name": "Shared UI Components",
+      "description": "Reusable, presentational components that form the atomic and molecular building blocks of the user interface (e.g., buttons, input fields, cards, modals). They receive data via props and emit events on user interaction.",
+      "referenced_source_code": [
+        {
+          "qualified_name": "src/CategoryModal.jsx",
+          "reference_file": "src\\CategoryModal.jsx",
+          "reference_start_line": null,
+          "reference_end_line": null
+        },
+        {
+          "qualified_name": "src/components/shared/ErrorBoundary.jsx",
+          "reference_file": "src\\components\\shared\\ErrorBoundary.jsx",
+          "reference_start_line": null,
+          "reference_end_line": null
+        }
+      ],
+      "assigned_files": [
+        "src\\CategoryModal.jsx",
+        "src\\CategorySidebar.jsx",
+        "src\\ConfirmModal.jsx",
+        "src\\Forminput.jsx",
+        "src\\NotifyMeModal.jsx",
+        "src\\ProductImage.jsx",
+        "src\\ProductImport.jsx",
+        "src\\RevenueChart.jsx",
+        "src\\StoreSettingsForm.jsx",
+        "src\\common\\UpgradeModal.jsx",
+        "src\\components\\dashboard\\AiMarketingModal.jsx",
+        "src\\components\\dashboard\\DashboardNav.jsx",
+        "src\\components\\dashboard\\ProductAnalyzer.jsx",
+        "src\\components\\dashboard\\ProductForm.jsx",
+        "src\\components\\dashboard\\SalesLeakDiagnostic.jsx",
+        "src\\components\\dashboard\\UpgradeTeaserWidget.jsx",
+        "src\\components\\shared\\ErrorBoundary.jsx",
+        "src\\components\\shared\\FullScreenLoader.jsx",
+        "src\\components\\shared\\LockedFeatureCard.jsx",
+        "src\\components\\shared\\LockedFeatureTeaser.jsx",
+        "src\\components\\store\\CheckoutDrawer.jsx",
+        "src\\components\\store\\DeliveryActivityMap.jsx",
+        "src\\components\\store\\LiveShopperSignals.jsx",
+        "src\\components\\store\\SocialConfidenceBadges.jsx",
+        "src\\components\\store\\StoreNav.jsx"
+      ],
+      "can_expand": false
+    },
+    {
+      "name": "State Management (Contexts)",
+      "description": "A centralized system for managing the application's global or feature-specific state using React's Context API. It provides data to consuming components and handles state updates in a predictable manner.",
+      "referenced_source_code": [
+        {
+          "qualified_name": "src/contexts/AuthContext.jsx",
+          "reference_file": "src\\contexts\\AuthContext.jsx",
+          "reference_start_line": null,
+          "reference_end_line": null
+        },
+        {
+          "qualified_name": "src/contexts/CartContext.jsx",
+          "reference_file": "src\\contexts\\CartContext.jsx",
+          "reference_start_line": null,
+          "reference_end_line": null
+        }
+      ],
+      "assigned_files": [
+        "src\\contexts\\AuthContext.jsx",
+        "src\\contexts\\CartContext.jsx",
+        "src\\contexts\\FirebaseContext.jsx",
+        "src\\contexts\\NotificationContext.jsx"
+      ],
+      "can_expand": true
+    },
+    {
+      "name": "API & Firebase Services",
+      "description": "Encapsulates all interactions with external backend APIs and Firebase services. It handles making HTTP requests, processing responses, and managing API-related errors, as well as Firebase-specific operations.",
+      "referenced_source_code": [
+        {
+          "qualified_name": "src/services/firebase.js",
+          "reference_file": "src\\services\\firebase.js",
+          "reference_start_line": null,
+          "reference_end_line": null
+        },
+        {
+          "qualified_name": "src/services/storeInitializer.js",
+          "reference_file": "src\\services\\storeInitializer.js",
+          "reference_start_line": null,
+          "reference_end_line": null
+        }
+      ],
+      "assigned_files": [
+        "src\\services\\firebase.js",
+        "src\\services\\storeInitializer.js"
+      ],
+      "can_expand": true
+    },
+    {
+      "name": "Unclassified",
+      "description": "Component for all unclassified files and utility functions (Utility functions/External Libraries/Dependencies)",
+      "referenced_source_code": [],
+      "assigned_files": [
+        "postcss.config.js",
+        "tailwind.config.js",
+        "vite.config.js",
+        "lib\\index.js",
+        "src\\config.js",
+        "src\\i18n.js"
+      ],
+      "can_expand": false
+    }
+  ],
+  "components_relations": [
+    {
+      "relation": "initializes and provides",
+      "src_name": "Root Application",
+      "dst_name": "Routing Module"
+    },
+    {
+      "relation": "provides global contexts to",
+      "src_name": "Root Application",
+      "dst_name": "State Management (Contexts)"
+    },
+    {
+      "relation": "dynamically renders",
+      "src_name": "Routing Module",
+      "dst_name": "Page Components"
+    },
+    {
+      "relation": "integrate",
+      "src_name": "Page Components",
+      "dst_name": "Layout Components"
+    },
+    {
+      "relation": "compose and render",
+      "src_name": "Page Components",
+      "dst_name": "Shared UI Components"
+    },
+    {
+      "relation": "consumes data from and dispatches actions to",
+      "src_name": "Page Components",
+      "dst_name": "State Management (Contexts)"
+    },
+    {
+      "relation": "initiates data fetching or update requests through",
+      "src_name": "Page Components",
+      "dst_name": "API & Firebase Services"
+    },
+    {
+      "relation": "compose and render",
+      "src_name": "Layout Components",
+      "dst_name": "Shared UI Components"
+    },
+    {
+      "relation": "may interact with",
+      "src_name": "State Management (Contexts)",
+      "dst_name": "API & Firebase Services"
+    }
+  ]
+}

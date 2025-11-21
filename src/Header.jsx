@@ -59,13 +59,13 @@ export function Header() {
   to="/pricing"
               className="text-base font-medium text-gray-700 hover:text-indigo-600"
             >
-              {t('header.pricing')} {/* <-- 10000% FIXED */}
+              {t('pricing')} {/* <-- 10000% FIXED */}
             </Link>
             <Link 
               to="/login" 
               className="text-base font-medium text-gray-700 hover:text-indigo-600"
             >
-              {t('header.signIn')} {/* <-- 10000% FIXED */}
+              {t('sign In')} {/* <-- 10000% FIXED */}
             </Link>
           </div>
         </div>

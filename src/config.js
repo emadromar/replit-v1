@@ -1,9 +1,12 @@
 // src/config.js
 
+// --- 1. GLOBAL CURRENCY CONFIG ---
+export const CURRENCY_CODE = 'USD'; 
+
 export const PLAN_DETAILS = {
   free: {
     name: 'Free',
-    price: '0 JOD',
+    price: `0 ${CURRENCY_CODE}`,
     priceMonthly: 0,
     features: [
       'Public Storefront',
@@ -12,24 +15,23 @@ export const PLAN_DETAILS = {
       '"Powered by" Badge',
     ],
     limits: {
-      products: 3, // --- The "Hard Pain" 3-product limit ---
-      categories: 0, // --- The "Utility Frustration" limit ---
+      products: 3,
+      categories: 0,
       aiBgRemovals: 0,
     },
   },
   basic: {
     name: 'Basic',
-    price: '5 JOD / month',
-    priceMonthly: 5,
+    price: `25 ${CURRENCY_CODE} / month`, // Adjusted for SAR approx
+    priceMonthly: 25,
     features: [
       'All Free features, plus:',
       'No "Powered by" Badge',
       'Upload Your Logo',
       'Custom Theme Color',
-      'Product Categories & Brands', // --- The CURE for the frustration ---
+      'Product Categories & Brands',
       'Sales Target Tracking',
       'AI Background Remover',
-      // --- The "Converter" Psychology Tools ---
       'AI Instagram Captions',
       'Instant Social Proof (ISPE)',
       'AI Confidence Reviewer',
@@ -37,16 +39,16 @@ export const PLAN_DETAILS = {
       '"Zeigarnik" Checkout Progress Bar',
     ],
     limits: {
-      products: 20, // --- The "Growing Pain" 20-product limit ---
+      products: 20,
       categories: Infinity,
       aiBgRemovals: 50,
-      discountCodes: 0, // --- The NEW Pro pain ---
+      discountCodes: 0,
     },
   },
   pro: {
     name: 'Pro',
-    price: '15 JOD / month',
-    priceMonthly: 15,
+    price: `75 ${CURRENCY_CODE} / month`, // Adjusted for SAR approx
+    priceMonthly: 75,
     features: [
       'All Basic features, plus:',
       'AI Product Descriptions',
@@ -54,11 +56,9 @@ export const PLAN_DETAILS = {
       'Advanced Sales Analytics',
       'Instant WhatsApp/Telegram Alerts',
       'Custom Store Path',
-      // --- The "Revenue Engine" Marketing Suite ---
-      'Discount Codes & Vouchers', // --- The CURE ---
+      'Discount Codes & Vouchers',
       'Influencer Marketing Tools',
       'BOGO & Free Shipping Logic',
-      // --- The "Automator" & "Magical" Features ---
       'NCL: AI Psychological Bundles',
       'NCL: One-Click Upsells',
       'NCL: "The Mirror Effect"',

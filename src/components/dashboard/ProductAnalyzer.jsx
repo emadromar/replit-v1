@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Zap, AlertTriangle, CheckCircle, ArrowRight, Lock, Loader2, MessageSquare } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
 import { Link, useNavigate } from 'react-router-dom';
+import { LockedFeatureCard } from '../shared/LockedFeatureCard.jsx';
 
 export function ProductAnalyzer({ product, store, onOpenUpgradeModal, services, showError }) {
     const { functions } = services;
@@ -55,7 +56,7 @@ export function ProductAnalyzer({ product, store, onOpenUpgradeModal, services, 
                 {issue.text}
             </h4>
             <p className="mt-1 text-sm text-gray-700 ml-7">
-                **Fix:** {issue.fixLink ? (
+                Fix: {issue.fixLink ? (
                     <Link to={issue.fixLink} className="font-semibold underline text-primary-700 hover:text-primary-600">
                         {issue.fix}
                     </Link>
@@ -85,7 +86,7 @@ export function ProductAnalyzer({ product, store, onOpenUpgradeModal, services, 
                 "Why No One Buys" Analyzer
             </h2>
             <p className="text-gray-600">
-                This report inspects **{product.name}** and identifies critical errors that are stopping your customers from buying.
+                This report inspects {product.name} and identifies critical errors that are stopping your customers from buying.
             </p>
 
             <AnimatePresence mode="wait">

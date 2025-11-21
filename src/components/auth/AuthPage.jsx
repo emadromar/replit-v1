@@ -105,11 +105,11 @@ function LoginForm({ onSubmit, onForgotPassword }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <AnimatedInput id="login-email" type="email" label={t('auth.emailLabel')} value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
-      <AnimatedInput id="login-password" type="password" label={t('auth.passwordLabel')} value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
+      <AnimatedInput id="login-email" type="email" label={t('Email')} value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+      <AnimatedInput id="login-password" type="password" label={t('Password')} value={password} onChange={(e) => setPassword(e.target.value)} required autoComplete="current-password" />
       <div className="pt-2">
         <AnimatedButton type="submit" isDisabled={loading}>
-          {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : t('auth.loginButton')}
+          {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : t('Log In')}
         </AnimatedButton>
       </div>
       <div className="text-center">
@@ -118,7 +118,7 @@ function LoginForm({ onSubmit, onForgotPassword }) {
           onClick={onForgotPassword}
           className="text-sm font-medium text-indigo-600 hover:text-indigo-500 hover:underline"
         >
-          {t('auth.forgotPassword')}
+          {t('Forgot Password')}
         </button>
       </div>
     </motion.form>
@@ -173,8 +173,21 @@ function SignupWizard({ onSignup, loading, showError, showSuccess }) {
     onSignup(email, password, ownerName, storeName, storeCategory);
   };
 
+const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      // Don't submit if it's a textarea (optional safety)
+      if (e.target.tagName === 'TEXTAREA') return;
+      
+      e.preventDefault(); // Prevent default form submission behavior
+      
+      if (step === 1 && storeName) nextStep();
+      else if (step === 2 && storeCategory) nextStep();
+      else if (step === 3) handleSubmit(e);
+    }
+  };
+
   return (
-    <div className="relative h-[450px] overflow-hidden">
+    <div className="relative h-[450px] overflow-hidden" onKeyDown={handleKeyDown}>
       {/* Animated Progress Bar */}
       <div className="relative mb-8 h-2 w-full rounded-full bg-gray-200">
         <motion.div
@@ -209,7 +222,7 @@ function SignupWizard({ onSignup, loading, showError, showSuccess }) {
                 What's your store name?
               </motion.p>
               <motion.div className="pt-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
-                <AnimatedInput id="storeName" label="Store Name" value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="e.g., Emad's Awesome Kicks" />
+                <AnimatedInput id="storeName" label="Store Name" value={storeName} onChange={(e) => setStoreName(e.target.value)} placeholder="e.g., Name Store" />
               </motion.div>
               <motion.div className="pt-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }}>
                 <AnimatedButton onClick={nextStep} isDisabled={!storeName}>
@@ -267,9 +280,9 @@ function SignupWizard({ onSignup, loading, showError, showSuccess }) {
                 Save Your New World
               </motion.h1>
               <motion.div className="space-y-4" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}>
-                <AnimatedInput id="ownerName" label={t('auth.yourNameLabel')} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
-                <AnimatedInput id="email" label={t('auth.emailLabel')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                <AnimatedInput id="password" label={t('auth.passwordMin')} type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                <AnimatedInput id="ownerName" label={t('Your Name')} value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
+                <AnimatedInput id="email" label={t('Email Label')} type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+                <AnimatedInput id="password" label={t('Password')} type="password" value={password} onChange={(e) => setPassword(e.target.value)} />
               </motion.div>
               
               <motion.div className="flex gap-4 pt-2" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}>
@@ -277,7 +290,7 @@ function SignupWizard({ onSignup, loading, showError, showSuccess }) {
                   <ArrowLeft className="w-5 h-5 mr-2" /> Back
                 </SecondaryButton>
                 <AnimatedButton type="submit" isDisabled={loading}>
-                  {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : t('auth.createButton')}
+                  {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : t('Create')}
                 </AnimatedButton>
               </motion.div>
 
@@ -433,7 +446,7 @@ export function AuthPage({ showError, showSuccess, services }) {
         <div className="text-center">
           <Store className="w-12 h-12 mx-auto text-indigo-600" />
           <h2 className="mt-4 text-3xl font-extrabold text-gray-900">
-            {showForgotPassword ? t('auth.resetTitle') : (isLogin ? t('auth.loginTitle') : t('auth.signupTitle'))}
+            {showForgotPassword ? t('Reset Title') : (isLogin ? t('Log In') : t('Sign Up'))}
           </h2>
         </div>
 
@@ -442,20 +455,20 @@ export function AuthPage({ showError, showSuccess, services }) {
         <div className="text-sm text-center text-gray-600">
           {showForgotPassword ? (
             <button onClick={() => setShowForgotPassword(false)} className="font-medium text-indigo-600 hover:text-indigo-500 hover:underline">
-              {t('auth.backToLogin')}
+              {t('Back To Login')}
             </button>
           ) : isLogin ? (
             <div className="flex flex-col sm:flex-row justify-center items-center sm:space-x-2 space-y-1 sm:space-y-0">
-              <span className="whitespace-nowrap">{t('auth.noAccount')}</span>
+              <span className="whitespace-nowrap">{t('No Account')}</span>
               <button onClick={() => setIsLogin(false)} className="ml-1 font-medium text-indigo-600 hover:text-indigo-500 hover:underline">
-                {t('auth.signUpButton')}
+                {t('Sign Up')}
               </button>
             </div>
           ) : (
             <div className="flex justify-center items-center space-x-2">
-              <span>{t('auth.haveAccount')}</span>
+              <span>{t('Have Account')}</span>
               <button onClick={() => setIsLogin(true)} className="ml-1 font-medium text-indigo-600 hover:text-indigo-500 hover:underline">
-                {t('auth.loginButton')}
+                {t('Log In')}
               </button>
             </div>
           )}
@@ -485,11 +498,11 @@ function ForgotPasswordForm({ onSubmit }) {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
-      <p className="text-sm text-gray-600">{t('auth.resetSubtitle')}</p>
-      <AnimatedInput id="reset-email" type="email" label={t('auth.emailLabel')} value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
+      <p className="text-sm text-gray-600">{t('Reset')}</p>
+      <AnimatedInput id="reset-email" type="email" label={t('Email')} value={email} onChange={(e) => setEmail(e.target.value)} required autoComplete="email" />
       <div className="pt-2">
         <AnimatedButton type="submit" isDisabled={loading}>
-          {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : t('auth.resetButton')}
+          {loading ? <Loader2 className="w-6 h-6 animate-spin" /> : t('Reset')}
         </AnimatedButton>
       </div>
     </motion.form>

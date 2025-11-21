@@ -5,153 +5,24 @@ import {
   collection, onSnapshot, query, orderBy,
   doc, deleteDoc, getDocs, where, addDoc, serverTimestamp
 } from 'firebase/firestore';
-import {
-  Plus, Trash2, Edit, Loader2, Search,
-  Package, Tag, X, Upload, Lock, Share2 // <-- ADDED SHARE2
-} from 'lucide-react';
+import { Plus, Loader2, Upload, Lock, Tag } from 'lucide-react';
 import { httpsCallable } from 'firebase/functions';
+import { useOutletContext } from 'react-router-dom';
 
 // Contexts & Components
-import { useFirebaseServices } from './contexts/FirebaseContext.jsx';
 import { useNotifications } from './contexts/NotificationContext.jsx';
-import { ProductImage } from './ProductImage.jsx';
 import { ConfirmModal } from './ConfirmModal.jsx';
 import { CategorySidebar } from './CategorySidebar.jsx';
 import { CategoryModal } from './CategoryModal.jsx';
 import { ProductImport } from './ProductImport.jsx';
 import { PLAN_DETAILS } from './config.js';
 import { ProductForm } from './components/dashboard/ProductForm.jsx';
-// --- 1. Import the LockedFeatureCard ---
 import { LockedFeatureCard } from './components/shared/LockedFeatureCard.jsx'; 
-import { useOutletContext } from 'react-router-dom';
 import { AiMarketingModal } from './components/dashboard/AiMarketingModal.jsx';
 
-// --- ProductList Component (Unchanged) ---
-function ProductList({
-  products, storeId, showError, showSuccess, onEdit, db,onMarket,
-  currentPlanId, searchTerm, onSearchChange, inventoryTitle, productSort, onSortChange
-}) {
-  const deleteProduct = async (productId, productName) => {
-    if (!productId || !db) return;
-    if (!window.confirm(`Are you sure you want to delete "${productName || 'this product'}"?`)) return;
-    try {
-      const productRef = doc(db, 'stores', storeId, 'products', productId);
-      await deleteDoc(productRef);
-      showSuccess(`Product "${productName}" deleted.`);
-    } catch (error) {
-      showError(`Deletion failed: ${error.message}`);
-      console.error('Delete product error:', error);
-    }
-  };
+// --- NEW IMPORT ---
+import { ProductList } from './components/products/ProductList.jsx';
 
-  return (
-    <div className="card p-6">
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-5">
-        <h2 className="text-xl font-semibold text-gray-900">
-          {inventoryTitle || 'Inventory'}{' '}
-          <span className="text-gray-400 font-normal">({products.length})</span>
-        </h2>
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          {currentPlanId !== 'free' && (
-            <div className="relative w-full sm:w-48">
-              <input
-                type="text"
-                placeholder="Search products..."
-                value={searchTerm}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="pl-9 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm w-full"
-              />
-              <Search className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" />
-            </div>
-          )}
-          {currentPlanId === 'pro' && (
-            <div className="w-full sm:w-48">
-              <select
-                value={productSort}
-                onChange={(e) => onSortChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm shadow-sm focus:ring-primary-500 focus:border-primary-500"
-              >
-                <option value="createdAt_desc">Sort: Newest First</option>
-                <option value="name_asc">Sort: Name (A-Z)</option>
-                <option value="price_asc">Sort: Price (Low-High)</option>
-                <option value="price_desc">Sort: Price (High-Low)</option>
-                <option value="stock_asc">Sort: Stock (Low-High)</option>
-              </select>
-            </div>
-          )}
-        </div>
-      </div>
-
-      <div className="mt-6">
-        {products.length === 0 ? (
-          <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-xl">
-             <Package className="w-12 h-12 mx-auto text-gray-400" />
-            <h3 className="mt-4 text-lg font-semibold text-gray-900">No products found</h3>
-            <p className="text-gray-500 text-sm mt-1">
-              {searchTerm ? 'Try adjusting your search.' : "Click 'Add New Product' to get started."}
-            </p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-            {products.map((product) => (
-              <div
-                key={product.id}
-                className="card card-hover overflow-hidden flex flex-col"
-              >
-                <ProductImage src={product.imageUrl} alt={product.name}
-                  className="w-full h-44 object-cover bg-gray-100"
-                />
-                <div className="p-4 flex-grow flex flex-col">
-                  <h3 className="font-semibold text-gray-800 truncate" title={product.name}>
-                    {product.name}
-                  </h3>
-                  <p className="text-lg font-bold text-gray-900 mt-1">{`JOD ${product.price?.toFixed(2) || '0.00'}`}</p>
-                  <p className={`text-sm font-medium mt-1 ${
-                    product.stock <= 5 && product.stock > 0 ? 'text-alert-warning' : product.stock === 0 ? 'text-alert-error' : 'text-gray-600'
-                  }`}>
-                    {product.stock} in stock
-                  </p>
-                  
-                  {/* --- MODIFIED BUTTON GROUP --- */}
-                  <div className="pt-4 mt-auto flex gap-2">
-                    <button onClick={() => onEdit(product)}
-                      className="btn-secondary flex-1"
-                      title="Edit">
-                      <Edit className="w-4 h-4 mr-1.5" /> Edit
-                    </button>
-                    
-                    {/* --- ADDED THIS NEW BUTTON --- */}
-                    <button 
-                      onClick={(e) => { 
-                        e.stopPropagation(); 
-                        onMarket(product);
-                      }}
-                      className="btn-primary-outline flex-1" // Match flex-1
-                      title="Market with AI"
-                    >
-                      <Share2 className="w-4 h-4 mr-1.5" /> Market
-                    </button>
-                    {/* --- END OF NEW BUTTON --- */}
-
-                    <button onClick={() => deleteProduct(product.id, product.name)}
-                      className="btn-secondary-danger flex-1"
-                      title="Delete">
-                      <Trash2 className="w-4 h-4 mr-1.5" /> Delete
-                    </button>
-                  </div>
-                  {/* --- END OF MODIFIED GROUP --- */}
-
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
-// --- MAIN COMPONENT: ProductsPage ---
 export function ProductsPage() {
   const { 
     user, store, services, showError, showSuccess, 
@@ -176,8 +47,8 @@ export function ProductsPage() {
   const [aiCaptions, setAiCaptions] = useState([]);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const [aiError, setAiError] = useState(null);
-  // (Data fetching, category logic, and filtering logic is unchanged)
-  // ...
+
+  // --- Actions ---
   const handleCreateCategory = async (categoryName) => {
     if (!store || !db) { showError('Database not connected.'); return Promise.reject(); }
     const storeId = store.id;
@@ -195,10 +66,12 @@ export function ProductsPage() {
       setIsCategoryModalOpen(false);
     } catch (error) { showError('Failed to create category.'); return Promise.reject(); }
   };
+
   const handleDeleteCategory = (categoryId, categoryName) => {
     setCategoryToDelete({ id: categoryId, name: categoryName });
     setIsConfirmModalOpen(true);
   };
+
   const confirmDeleteCategory = async () => {
     if (!categoryToDelete || !store || !db) { showError('Error: No category selected for deletion.'); return; }
     try {
@@ -210,6 +83,8 @@ export function ProductsPage() {
     } catch (error) { showError('Failed to delete category.');
     } finally { setIsConfirmModalOpen(false); setCategoryToDelete(null); }
   };
+
+  // --- Effects ---
   useEffect(() => {
     if (!user) return;
     const storeId = user.uid;
@@ -220,6 +95,7 @@ export function ProductsPage() {
     }, (error) => { showError('Failed to load products.'); });
     return () => unsubscribe();
   }, [store, db, showError]);
+
   useEffect(() => {
     if (!user) return;
     const storeId = user.uid;
@@ -230,6 +106,7 @@ export function ProductsPage() {
     }, (error) => { showError('Failed to load categories.'); });
     return () => unsubscribe();
   }, [store, db, showError]);
+
   useEffect(() => {
     if (!user) return;
     const storeId = user.uid;
@@ -240,6 +117,8 @@ export function ProductsPage() {
     }, (error) => { showError('Failed to load brands.'); });
     return () => unsubscribe();
   }, [store, db, showError]);
+
+  // --- Derived State ---
   const filteredProducts = useMemo(() => {
     let tempProducts = [...products];
     if (selectedCategory !== 'all') {
@@ -278,51 +157,47 @@ export function ProductsPage() {
     setSelectedCategory(id); setEditingProduct(null); setShowForm(false);
   };
 
-  // ... after handleSelectCategory ...
-
-const handleGenerateCaptions = async (product) => {
-  if (!product) return;
-
-  // This is the "Pro Plan" check
-  
-  if (store.planId !== 'pro') {
-    showError("AI Marketing is a Pro feature. Please upgrade to use it.");
-    onOpenUpgradeModal();
-    setIsAiModalOpen(false);
-    return;
-  }
-
-  setIsAiLoading(true);
-  setAiError(null);
-  setAiCaptions([]); // Clear old captions
-
-  try {
-    // Call the cloud function you just deployed
-    const generate = httpsCallable(functions, 'generateInstagramCaptions');
-    const result = await generate({ 
-      productName: product.name, 
-      storeName: store.name 
-    });
-
-    if (result.data && result.data.captions) {
-      setAiCaptions(result.data.captions);
-    } else {
-      throw new Error("No captions were returned.");
+  const handleGenerateCaptions = async (product) => {
+    if (!product) return;
+    
+    // Correct plan check: Only block if 'free'
+    if (store.planId === 'free') {
+      showError("AI Marketing is a Basic/Pro feature. Please upgrade to use it.");
+      onOpenUpgradeModal();
+      setIsAiModalOpen(false);
+      return;
     }
 
-  } catch (error) {
-    console.error("AI Generation Error:", error);
-    setAiError(error.message || "Failed to generate captions. Please try again.");
-  } finally {
-    setIsAiLoading(false);
-  }
-};
+    setIsAiLoading(true);
+    setAiError(null);
+    setAiCaptions([]);
 
-const handleMarket = (product) => {
-  setAiProduct(product);
-  setIsAiModalOpen(true);
-  handleGenerateCaptions(product); // Generate captions when modal opens
-};
+    try {
+      const generate = httpsCallable(functions, 'generateInstagramCaptions');
+      const result = await generate({ 
+        productName: product.name, 
+        storeName: store.name 
+      });
+
+      if (result.data && result.data.captions) {
+        setAiCaptions(result.data.captions);
+      } else {
+        throw new Error("No captions were returned.");
+      }
+
+    } catch (error) {
+      console.error("AI Generation Error:", error);
+      setAiError(error.message || "Failed to generate captions. Please try again.");
+    } finally {
+      setIsAiLoading(false);
+    }
+  };
+
+  const handleMarket = (product) => {
+    setAiProduct(product);
+    setIsAiModalOpen(true);
+    handleGenerateCaptions(product);
+  };
 
   if (!store || !user) {
     return ( 
@@ -339,7 +214,7 @@ const handleMarket = (product) => {
   const currentPlanDetails = PLAN_DETAILS[currentPlanId];
   const productLimit = currentPlanDetails?.limits?.products ?? 0;
   const canAddMoreProducts = products.length < productLimit;
-const inventoryTitle = currentPlanId === 'free' ? `Your ${productLimit} Products` : 'Product Inventory';
+  const inventoryTitle = currentPlanId === 'free' ? `Your ${productLimit} Products` : 'Product Inventory';
   const subscriptionEndDate = store?.subscriptionEnds?.toDate();
   const isSubscriptionActive = subscriptionEndDate ? subscriptionEndDate > new Date() : currentPlanId === 'free';
   const canUseBulkImport = currentPlanId === 'pro' && isSubscriptionActive;
@@ -382,7 +257,6 @@ const inventoryTitle = currentPlanId === 'free' ? `Your ${productLimit} Products
             </button>
           )}
 
-          {/* --- 3. SHOW CATEGORIES OR THE "LOCK" CARD --- */}
           {canUseCategories ? (
             <div className="card p-4">
               <CategorySidebar
@@ -403,7 +277,6 @@ const inventoryTitle = currentPlanId === 'free' ? `Your ${productLimit} Products
             />
           )}
           
-          {/* --- 4. SHOW BULK IMPORT OR "LOCK" CARD --- */}
           {canUseBulkImport ? (
             <ProductImport storeId={user.uid} db={db} showError={showError} showSuccess={showSuccess} />
           ) : (
@@ -417,7 +290,7 @@ const inventoryTitle = currentPlanId === 'free' ? `Your ${productLimit} Products
               </p>
               <button
                 onClick={onOpenUpgradeModal}
-                className="btn-locked w-full" // Use our new style
+                className="btn-locked w-full"
               >
                 <Lock className="w-4 h-4 mr-1.5" />
                 Upgrade to Pro to Enable
@@ -461,18 +334,16 @@ const inventoryTitle = currentPlanId === 'free' ? `Your ${productLimit} Products
         confirmText="Delete"
       />
 
-          <AiMarketingModal
-  isOpen={isAiModalOpen}
-  onClose={() => setIsAiModalOpen(false)}
-  productName={aiProduct?.name}
-  storeName={store?.name}
-  // Pass the state and functions down to the modal
-  isLoading={isAiLoading}
-  error={aiError}
-  captions={aiCaptions}
-  onGenerate={() => handleGenerateCaptions(aiProduct)} // Pass the function
-/>
-
+      <AiMarketingModal
+        isOpen={isAiModalOpen}
+        onClose={() => setIsAiModalOpen(false)}
+        productName={aiProduct?.name}
+        storeName={store?.name}
+        isLoading={isAiLoading}
+        error={aiError}
+        captions={aiCaptions}
+        onGenerate={() => handleGenerateCaptions(aiProduct)}
+      />
     </div>
   );
 }

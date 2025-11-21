@@ -1,0 +1,35 @@
+PS E:\Downloads\replit-v1 (1)\replit-v1> npm run serve:functions
+
+> serve:functions
+> npm run build:functions && firebase emulators:start --only functions
+
+
+> build:functions
+> tsc
+
+i  emulators: Starting emulators: functions
+!  functions: The following emulators are not running, calls to these services from the Functions emulator will affect production: apphosting, auth, firestore, database, hosting, pubsub, storage, dataconnect
+i  functions: Watching "E:\Downloads\replit-v1 (1)\replit-v1\functions" for Cloud Functions...
+!!  functions: Failed to load function definition from source: FirebaseError: could not deploy functions because the "functions" directory was not found. Please create it or specify a different source directory in firebase.json
+i  functions: Watching "E:\Downloads\replit-v1 (1)\replit-v1\webj" for Cloud Functions...
+!  functions: package.json indicates an outdated version of firebase-functions. Please upgrade using npm install --save firebase-functions@latest in your functions directory.
+!  functions: Please note that there will be breaking changes when you upgrade.
+!!  functions: Failed to load function definition from source: FirebaseError: There was an error reading webj\package.json:
+
+ webj\lib\index.js does not exist, can't deploy Cloud Functions
+
+┌─────────────────────────────────────────────────────────────┐
+│ ✔  All emulators ready! It is now safe to connect your app. │
+│ i  View Emulator UI at http://127.0.0.1:4000/               │
+└─────────────────────────────────────────────────────────────┘
+
+┌───────────┬──────────────┬─────────────────────────────────┐
+│ Emulator  │ Host:Port    │ View in Emulator UI             │
+├───────────┼──────────────┼─────────────────────────────────┤
+│ Functions │ 0.0.0.0:5001 │ http://127.0.0.1:4000/functions │
+└───────────┴──────────────┴─────────────────────────────────┘
+  Emulator Hub host: 127.0.0.1 port: 4400
+  Other reserved ports: 4500
+
+Issues? Report them at https://github.com/firebase/firebase-tools/issues and attach the *-debug.log files.
+

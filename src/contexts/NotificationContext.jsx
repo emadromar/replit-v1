@@ -103,7 +103,16 @@ export function NotificationProvider({ children }) {
     // 2. Send External Notification (Email)
     if (tier.email && storeEmail && functions) {
       let subject = `[${tier.emailPriority.toUpperCase()}] WebJor Alert: ${type.toUpperCase()}`;
-      if (type === 'order') subject = `New Order: JOD ${message.match(/JOD ([\d.]+)/)?.[1] || 'Unknown'} Placed.`;
+      if (type === 'order') {
+  // 1. Create the Regex dynamically using the variable
+  const amountRegex = new RegExp(`${CURRENCY_CODE} ([\\d.]+)`);
+  
+  // 2. Extract the amount safely
+  const amount = message.match(amountRegex)?.[1] || 'Unknown';
+  
+  // 3. Set the subject
+  subject = `New Order: ${CURRENCY_CODE} ${amount} Placed.`;
+}
       if (type === 'stock') subject = `Urgent Stock Alert: ${message.match(/: (.*?) is low/)?.[1] || 'A Product'} needs restocking!`;
       if (type === 'upgrade_approved') subject = `Congratulations! Your Plan Has Been Upgraded!`;
       if (type === 'upgrade_declined') subject = `Subscription Update: Your Upgrade Request Was Declined.`;

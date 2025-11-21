@@ -15,6 +15,7 @@ import * as nodemailer from "nodemailer";
 import { initializeApp } from "firebase-admin/app";
 import { getFirestore, QueryDocumentSnapshot, DocumentSnapshot } from "firebase-admin/firestore";
 import { GoogleGenerativeAI, HarmCategory, HarmBlockThreshold } from "@google/generative-ai";
+import 'dotenv/config';
 
 // Initialize Firebase Admin SDK
 initializeApp();
@@ -311,7 +312,6 @@ export const onProductUpdate = onDocumentUpdated({
 export const generateInstagramCaptions = onCall({
   secrets: ["GEMINI_KEY"], 
 }, async (request: CallableRequest<InstagramCaptionsRequest>) => {
-  
   if (!request.auth) {
     logger.error("Authentication failed: User was not authenticated.");
     throw new HttpsError('unauthenticated', 
@@ -341,7 +341,7 @@ export const generateInstagramCaptions = onCall({
   const sanitizedStore = storeName.substring(0, 100);
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash-latest",
+    model: "gemini-1.5-flash",
     safetySettings: [
       { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
       { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -392,9 +392,7 @@ export const generateInstagramCaptions = onCall({
 
 
 // --- Function 4: analyzeProduct ---
-export const analyzeProduct = onCall(
-  { secrets: ["GEMINI_KEY"] },
-  async (request: CallableRequest<AnalyzeProductRequest>) => {
+export const analyzeProduct = onCall(async (request: CallableRequest<AnalyzeProductRequest>) => {
     
     if (!request.auth) {
       throw new HttpsError('unauthenticated', 'You must be logged in.');
@@ -479,9 +477,8 @@ export const analyzeProduct = onCall(
 
 // --- Function 5: generateProductDescription ---
 export const generateProductDescription = onCall({
-  secrets: ["GEMINI_KEY"],
+  secrets: ["GEMINI_KEY"], 
 }, async (request: CallableRequest<{ productName: string }>) => {
-  
   if (!request.auth) {
     logger.error("Authentication failed: User was not authenticated.");
     throw new HttpsError('unauthenticated', 
@@ -509,7 +506,7 @@ export const generateProductDescription = onCall({
   const sanitizedProduct = productName.substring(0, 200);
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash-latest",
+    model: "gemini-1.5-flash",
     safetySettings: [
       { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
       { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
@@ -560,81 +557,53 @@ export const generateProductDescription = onCall({
 // --- Function 6: generateBrandColor ---
 export const generateBrandColor = onCall({
   secrets: ["GEMINI_KEY"],
-}, async (request: CallableRequest<{ storeName: string }>) => {
+}, async (request: CallableRequest<{ storeName: string, mood: string }>) => {
   
   if (!request.auth) {
-    logger.error("Authentication failed: User was not authenticated.");
-    throw new HttpsError('unauthenticated', 
-      'You must be logged in to use this feature.'
-    );
+    throw new HttpsError('unauthenticated', 'Must be logged in.');
   }
 
   const GEMINI_API_KEY = process.env.GEMINI_KEY;
-  if (!GEMINI_API_KEY) {
-    logger.error("Gemini API Key is not set in secrets.");
-    throw new HttpsError('internal', 'AI service is not configured.');
-  }
   
+  // --- FIX: TypeScript Check ---
+  if (!GEMINI_API_KEY) {
+    throw new HttpsError('internal', 'Gemini API Key is not configured.');
+  }
+  // -----------------------------
+
   const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
 
-  const storeName = request.data.storeName;
-
-  if (!storeName) {
-    throw new HttpsError(
-      "invalid-argument",
-      "Store name is required."
-    );
-  }
-
-  const sanitizedStore = storeName.substring(0, 100);
+  const { storeName, mood } = request.data;
 
   const model = genAI.getGenerativeModel({
-    model: "gemini-1.5-flash-latest",
-    safetySettings: [
-      { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-      { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
-      { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
-      { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
-    ],
-    generationConfig: {
-      responseMimeType: "application/json",
-      temperature: 0.8,
-    },
+    model: "gemini-1.5-flash",
+    generationConfig: { responseMimeType: "application/json" }
   });
 
   const prompt = `
     You are a professional brand designer.
-    Based on the store name "${sanitizedStore}", suggest a professional brand color palette.
+    Generate a hex color for a store named "${storeName}" with a "${mood}" vibe.
     
-    RULES:
-    - Return a primary color that fits the brand personality.
-    - The color should be in HEX format (e.g., #4f46e5).
-    - Consider the psychology of colors and what they convey.
-    - Return ONLY a valid JSON object with a "color" field.
+    Psychology Guide:
+    - Calm: Blues, Teals, Soft Greens
+    - Energetic: Reds, Oranges, Yellows
+    - Luxury: Black, Gold, Deep Purple, Silver
+    - Friendly: Soft Pink, Light Blue, Peach
+    - Trustworthy: Navy Blue, Forest Green
     
-    Example: {"color": "#4f46e5"}
+    Return ONLY a JSON object: {"color": "#HEXCODE"}
   `;
 
   try {
     const result = await model.generateContent(prompt); 
     const response = await result.response;
+    const text = response.text();
+    const colorData = JSON.parse(text);
     
-    const jsonText = response.text().replace(/```json/g, "").replace(/```/g, "").trim();
-    const colorData = JSON.parse(jsonText) as { color: string };
-    
-    if (!colorData.color || !colorData.color.match(/^#[0-9A-Fa-f]{6}$/)) {
-      throw new Error("AI did not return a valid hex color");
-    }
-
-    logger.info(`Generated brand color for ${storeName}: ${colorData.color}`);
     return { color: colorData.color };
-
   } catch (error: any) {
-    logger.error("AI Generation Error:", error);
-    throw new HttpsError(
-      "internal",
-      "Failed to generate brand color. Please try again."
-    );
+    logger.error("AI Color Error:", error);
+    throw new HttpsError("internal", "Failed to generate color.");
   }
 });
 

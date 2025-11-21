@@ -1,0 +1,85 @@
+# OS files
+.DS_Store
+Thumbs.db
+
+# Node dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Build / Output
+dist/
+build/
+out/
+public/build/
+.cache/
+.tmp/
+.eslintcache
+
+# Replit
+.replit
+.replit.state
+
+# Firebase
+.firebase/
+firebase-debug.log
+firebase-debug.log.*
+firestore-debug.log
+firestore-debug.log.*
+storage-debug.log
+storage-debug.log.*
+.emulators/
+_functions/
+extensions/
+
+# Firebase Hosting cache
+.firebase-hosting-cache/
+
+# Environment files
+.env
+.env.*
+*.local
+*.env.backup
+
+# VS Code
+.vscode/
+.history/
+
+# Logs
+*.log
+*.tmp
+*.pid
+*.seed
+*.pid.lock
+
+# Testing
+coverage/
+.nyc_output/
+
+# TypeScript
+*.tsbuildinfo
+
+# Lock files you don’t want
+package-lock.json
+pnpm-lock.yaml
+yarn.lock
+
+# Browsers / tooling
+.pnp/
+.pnp.js
+.cache/
+.parcel-cache/
+.next/
+.nuxt/
+.svelte-kit/
+.vite/
+.vite-inspect/
+.snowpack/
+
+# Misc
+*.bak
+*.swp
+*.zip
+*.tar
+*.gz

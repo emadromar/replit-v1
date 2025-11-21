@@ -1,3 +1,5 @@
+// src/RevenueChart.jsx
+
 import React from 'react';
 import { Line } from 'react-chartjs-2';
 import {
@@ -12,7 +14,9 @@ import {
   Filler
 } from 'chart.js';
 
-// Register necessary Chart.js components
+// --- 1. FIX: Import the Currency Code ---
+import { CURRENCY_CODE } from './config.js'; 
+
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -24,18 +28,15 @@ ChartJS.register(
   Filler
 );
 
-// --- FUNCTION TO PROCESS REAL ORDERS DATA ---
 const generateChartData = (orders) => {
   const MS_PER_DAY = 24 * 60 * 60 * 1000;
   const now = new Date();
   
-  // 1. Initialize data structure for the last 7 days
   const dailyRevenue = {};
   const labels = [];
   
   for (let i = 6; i >= 0; i--) {
     const day = new Date(now.getTime() - i * MS_PER_DAY);
-    // Format label for chart (e.g., Oct 20)
     const label = day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }); 
     const dateKey = day.toISOString().split('T')[0];
     
@@ -43,9 +44,7 @@ const generateChartData = (orders) => {
     labels.push(label);
   }
 
-  // 2. Aggregate Revenue from Orders
   orders.forEach(order => {
-    // Orders must have a creation date (Firestore Timestamp)
     if (order.createdAt && order.createdAt.toDate) {
       const orderDate = order.createdAt.toDate();
       const dateKey = orderDate.toISOString().split('T')[0];
@@ -56,7 +55,6 @@ const generateChartData = (orders) => {
     }
   });
   
-  // 3. Extract the final values in correct order
   const dataKeys = Object.keys(dailyRevenue).sort();
   const revenueData = dataKeys.map(key => dailyRevenue[key]);
 
@@ -64,10 +62,11 @@ const generateChartData = (orders) => {
     labels,
     datasets: [
       {
-        label: 'Daily Revenue (JOD)',
+        // --- 2. FIX: Use Backticks for Variable ---
+        label: `Daily Revenue (${CURRENCY_CODE})`, 
         data: revenueData,
         borderColor: 'rgb(79, 70, 229)', 
-        backgroundColor: 'rgba(79, 70, 229, 0.2)', // Lighter fill
+        backgroundColor: 'rgba(79, 70, 229, 0.2)',
         fill: true,
         tension: 0.4, 
         pointRadius: 5,
@@ -76,8 +75,6 @@ const generateChartData = (orders) => {
     ],
   };
 };
-
-// Inside src/RevenueChart.jsx
 
 const options = {
   responsive: true,
@@ -95,22 +92,20 @@ const options = {
       }
     },
   },
-  // --- UPDATED SCALES FOR BETTER READABILITY ---
   scales: {
     y: {
       beginAtZero: true,
       title: {
         display: true,
-        text: 'Revenue (JOD)',
+        // --- 3. FIX: Update Axis Label with Backticks ---
+        text: `Revenue (${CURRENCY_CODE})`,
       },
       grid: {
           color: 'rgba(200, 200, 200, 0.2)',
       },
-      // NEW: Adjust step size and padding
       ticks: {
-          // Increase step size for less dense labels (e.g., show every 10 or 20)
           stepSize: 10, 
-          padding: 10, // Add padding to labels
+          padding: 10,
       }
     },
     x: {
@@ -119,19 +114,17 @@ const options = {
         }
     }
   },
-  // --- NEW: Add padding around the chart area ---
   layout: {
       padding: {
           top: 10,
           right: 20,
           bottom: 0,
-          left: 10 // Increase left padding for Y-axis numbers
+          left: 10
       }
   }
 };
 
 export function RevenueChart({ orders }) {
-  // Use useMemo here to prevent unnecessary re-runs of data processing
   const chartData = React.useMemo(() => generateChartData(orders), [orders]);
 
   return (
