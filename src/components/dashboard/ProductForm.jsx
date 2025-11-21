@@ -21,7 +21,7 @@ import { LockedFeatureCard } from '../shared/LockedFeatureCard.jsx';
 import { PLAN_DETAILS, CURRENCY_CODE } from '../../config.js';
 import { ProductAnalyzer } from './ProductAnalyzer.jsx';
 
-// --- NEW SUB-COMPONENTS ---
+// Sub-components
 import { ImageUploader } from './product/ImageUploader.jsx';
 import { ReviewManager } from './product/ReviewManager.jsx';
 
@@ -281,9 +281,9 @@ export function ProductForm({
                 <Input label="Stock Quantity" type="number" step="1" min="0" value={stock} onChange={setStock} required id="product-stock" placeholder="0" />
               </div>
               
-              {/* AI Description */}
-              <div className="bg-white border border-gray-200 rounded-xl p-1">
-                 <div className="flex justify-between items-center p-3 bg-gray-50 rounded-t-lg border-b border-gray-100">
+              {/* AI Description - NEW IMPROVED STATE */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden relative group focus-within:ring-4 focus-within:ring-primary-500/20 focus-within:border-primary-500 transition-all">
+                 <div className="flex justify-between items-center p-3 bg-gray-50 border-b border-gray-100">
                     <label htmlFor="product-description" className="block text-sm font-semibold text-gray-700">Product Description</label>
                     {isProPlan ? (
                       <button
@@ -293,18 +293,29 @@ export function ProductForm({
                         className="flex items-center px-3 py-1.5 text-xs font-semibold rounded-md text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all"
                       >
                         {aiLoading ? <Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1.5" />}
-                        {aiLoading ? "Generating..." : "Auto-Write with AI"}
+                        {aiLoading ? "Writing..." : "Auto-Write with AI"}
                       </button>
                     ) : (
                       <span className="text-xs text-gray-400 flex items-center"><Lock className="w-3 h-3 mr-1" /> AI writing locked (Pro)</span>
                     )}
                   </div>
+                  
+                  {/* LOADING SKELETON OVERLAY */}
+                  {aiLoading && (
+                    <div className="absolute inset-0 top-[45px] bg-white/80 z-10 flex flex-col items-start justify-start p-4 space-y-3 animate-pulse">
+                       <div className="h-2.5 bg-indigo-100 rounded-full w-3/4"></div>
+                       <div className="h-2.5 bg-indigo-100 rounded-full w-full"></div>
+                       <div className="h-2.5 bg-indigo-100 rounded-full w-5/6"></div>
+                       <div className="h-2.5 bg-indigo-100 rounded-full w-4/5"></div>
+                    </div>
+                  )}
+
                   <textarea 
                     id="product-description" 
                     value={description} 
                     onChange={(e) => setDescription(e.target.value)} 
-                    rows={aiLoading ? 6 : 4}
-                    className="block w-full px-4 py-3 text-body border-0 focus:ring-0 rounded-b-xl resize-y placeholder-gray-300"
+                    rows={6}
+                    className="block w-full px-4 py-3 text-body border-0 focus:ring-0 resize-y placeholder-gray-300 outline-none"
                     placeholder="Describe your product here..." 
                     readOnly={aiLoading}
                   />

@@ -1,10 +1,11 @@
-// src/context/NotificationContext.jsx
+// src/contexts/NotificationContext.jsx
 
 import React, { useState, useMemo, createContext, useContext } from 'react';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { httpsCallable } from 'firebase/functions';
 import { AlertCircle, CheckCircle } from 'lucide-react';
-import { useFirebaseServices } from './FirebaseContext'; // Import our hook
+import { useFirebaseServices } from './FirebaseContext'; 
+import { CURRENCY_CODE } from '../config.js'; // Added import for currency code
 
 // --- Notification System Definitions ---
 const NOTIFICATION_TIERS = {
@@ -46,13 +47,13 @@ const sendExternalCommunication = (functions, recipientEmail, subject, htmlBody)
 };
 
 // --- Transient Notification Component ---
-// We keep this here as it's only used by the provider
 function Notification({ message, type = 'error' }) {
   const bgColor = type === 'error' ? 'bg-red-600' : 'bg-green-600';
   const icon = type === 'error' ? <AlertCircle className="w-5 h-5 mr-3" /> : <CheckCircle className="w-5 h-5 mr-3" />;
   
+  // FIX: Increased z-index to z-[9999] to sit above the sticky header (z-[100])
   return (
-    <div className={`fixed top-4 right-4 z-[100] ${bgColor} text-white p-4 rounded-lg shadow-lg flex items-center animate-fade-in-down`}>
+    <div className={`fixed top-4 right-4 z-[9999] ${bgColor} text-white p-4 rounded-lg shadow-lg flex items-center animate-fade-in-down`}>
       {icon}
       <span>{message}</span>
     </div>
@@ -61,7 +62,7 @@ function Notification({ message, type = 'error' }) {
 
 // --- Provider Component ---
 export function NotificationProvider({ children }) {
-  const { db, functions } = useFirebaseServices(); // Get services from context
+  const { db, functions } = useFirebaseServices(); 
   const [transientNotifications, setTransientNotifications] = useState([]);
   
   const addTransientNotification = (message, type = 'success', duration = 4000) => {
@@ -104,15 +105,13 @@ export function NotificationProvider({ children }) {
     if (tier.email && storeEmail && functions) {
       let subject = `[${tier.emailPriority.toUpperCase()}] WebJor Alert: ${type.toUpperCase()}`;
       if (type === 'order') {
-  // 1. Create the Regex dynamically using the variable
-  const amountRegex = new RegExp(`${CURRENCY_CODE} ([\\d.]+)`);
-  
-  // 2. Extract the amount safely
-  const amount = message.match(amountRegex)?.[1] || 'Unknown';
-  
-  // 3. Set the subject
-  subject = `New Order: ${CURRENCY_CODE} ${amount} Placed.`;
-}
+        // 1. Create the Regex dynamically using the variable
+        const amountRegex = new RegExp(`${CURRENCY_CODE} ([\\d.]+)`);
+        // 2. Extract the amount safely
+        const amount = message.match(amountRegex)?.[1] || 'Unknown';
+        // 3. Set the subject
+        subject = `New Order: ${CURRENCY_CODE} ${amount} Placed.`;
+      }
       if (type === 'stock') subject = `Urgent Stock Alert: ${message.match(/: (.*?) is low/)?.[1] || 'A Product'} needs restocking!`;
       if (type === 'upgrade_approved') subject = `Congratulations! Your Plan Has Been Upgraded!`;
       if (type === 'upgrade_declined') subject = `Subscription Update: Your Upgrade Request Was Declined.`;
@@ -121,17 +120,16 @@ export function NotificationProvider({ children }) {
     }
   };
   
-  // Memoize the context value to prevent unnecessary re-renders
   const contextValue = useMemo(() => ({
     sendSystemNotification,
     showError,
     showSuccess,
-  }), [db, functions]); // Dependencies
+  }), [db, functions]);
 
   return (
     <NotificationContext.Provider value={contextValue}>
-      {/* Render transient notifications globally */}
-      <div className="fixed top-4 right-4 z-[100]">
+      {/* FIX: Increased z-index to z-[9999] for the container as well */}
+      <div className="fixed top-4 right-4 z-[9999]">
         {transientNotifications.map(n => (
           <Notification key={n.id} message={n.message} type={n.type} />
         ))}

@@ -16,7 +16,7 @@ import { Input } from '../../Forminput.jsx';
 import { ProductImage } from '../../ProductImage.jsx';
 import { CURRENCY_CODE } from '../../config.js';
 
-// --- Helper Component: Step Indicator ---
+// ... (Helper Components StepIndicator and CheckoutStep remain unchanged) ...
 const StepIndicator = ({ currentStep }) => {
   const steps = [
     { num: 1, title: 'Details', icon: User },
@@ -57,7 +57,6 @@ const StepIndicator = ({ currentStep }) => {
   );
 };
 
-// --- Helper Component: Animated Step Wrapper ---
 const CheckoutStep = ({ stepKey, children }) => {
   const variants = {
     enter: { x: '100%', opacity: 0 },
@@ -80,7 +79,6 @@ const CheckoutStep = ({ stepKey, children }) => {
   );
 };
 
-
 export function CheckoutDrawer({
   isOpen,
   onClose,
@@ -91,11 +89,9 @@ export function CheckoutDrawer({
   showSuccess,
   sendSystemNotification,
 }) {
-  // Ensure store exists before calling hooks that depend on it
   const storeId = store?.id;
-  const { cart, clearCart, getTotalPrice, getItemCount, removeFromCart, updateQuantity } = useCart(storeId);
+  const { cart, clearCart, getTotalPrice, getItemCount } = useCart(storeId);
   
-  // --- SAFETY CHECK: Convert cart object to array safely ---
   const cartItems = cart ? Object.values(cart) : [];
   const cartTotal = getTotalPrice ? parseFloat(getTotalPrice()) : 0;
   const cartCount = getItemCount ? getItemCount() : 0;
@@ -110,7 +106,7 @@ export function CheckoutDrawer({
   const [customerAddress, setCustomerAddress] = useState('');
   const [customerGovernorate, setCustomerGovernorate] = useState('');
   const [customerNotes, setCustomerNotes] = useState('');
-  const [paymentMethod, setPaymentMethod] = useState('COD'); // Default to COD
+  const [paymentMethod, setPaymentMethod] = useState('COD'); 
 
   const governorates = [
     'Amman', 'Irbid', 'Zarqa', 'Balqa', 'Mafraq', 'Karak', 
@@ -120,7 +116,6 @@ export function CheckoutDrawer({
   const canGoToStep2 = customerName.trim() !== '' && customerPhone.trim() !== '' && customerPhone.length >= 7;
   const canGoToStep3 = canGoToStep2 && customerAddress.trim() !== '' && customerGovernorate !== '';
 
-  const currentPlanId = store?.planId || 'free';
   const themeColor = store?.themeColor || '#6D28D9';
 
   useEffect(() => {
@@ -151,9 +146,9 @@ export function CheckoutDrawer({
         total: cartTotal,
         status: 'PENDING',
         paymentMethod: paymentMethod,
-        customerName: customerName,      // Add these top-level fields for OrderList compatibility
-        customerPhone: customerPhone,    // Add these top-level fields for OrderList compatibility
-        customerAddress: `${customerAddress}, ${customerGovernorate}`, // Add these top-level fields for OrderList compatibility
+        customerName: customerName,      
+        customerPhone: customerPhone,    
+        customerAddress: `${customerAddress}, ${customerGovernorate}`,
         customer: {
           name: customerName,
           phone: customerPhone,
@@ -166,7 +161,6 @@ export function CheckoutDrawer({
 
       const batch = writeBatch(db);
       
-      // Use the products prop if available to update stock, otherwise skip strict checking for now
       if (products) {
           for (const item of cartItems) {
             const productDoc = products.find(p => p.id === item.id);
@@ -187,7 +181,7 @@ export function CheckoutDrawer({
       sendSystemNotification(
         store.id,
         store.email,
-        currentPlanId,
+        store.planId || 'free',
         'new_order',
         `New Order! You have a new order (#${Date.now().toString().slice(-6)}) for ${CURRENCY_CODE} ${cartTotal} from ${customerName}.`
       );
@@ -295,21 +289,21 @@ export function CheckoutDrawer({
                    {cartItems.map(item => (
                        <div key={item.id} className="flex justify-between text-sm">
                            <span>{item.quantity}x {item.name}</span>
-                           <span className="font-medium">${CURRENCY_CODE} {(item.price * item.quantity).toFixed(2)}</span>
+                           <span className="font-medium tabular-nums">${CURRENCY_CODE} {(item.price * item.quantity).toFixed(2)}</span>
                        </div>
                    ))}
                    <div className="border-t pt-2 flex justify-between font-bold text-lg">
                        <span>Total</span>
-                       <span> ${CURRENCY_CODE} {cartTotal}</span>
+                       <span className="tabular-nums"> ${CURRENCY_CODE} {cartTotal}</span>
                    </div>
                 </div>
                 <div className="space-y-3">
                     <h4 className="font-medium text-gray-900">Payment Method</h4>
                     <div className="grid grid-cols-2 gap-3">
-                        <button type="button" onClick={() => setPaymentMethod('COD')} className={`p-3 border rounded-lg text-sm font-medium ${paymentMethod === 'COD' ? 'border-primary-600 bg-primary-50 text-primary-700 ring-1 ring-primary-600' : 'hover:bg-gray-50'}`}>
+                        <button type="button" onClick={() => setPaymentMethod('COD')} className={`p-3 border rounded-lg text-sm font-medium transition-colors ${paymentMethod === 'COD' ? 'border-primary-600 bg-primary-50 text-primary-700 ring-1 ring-primary-600' : 'hover:bg-gray-50'}`}>
                             Cash on Delivery
                         </button>
-                        <button type="button" onClick={() => setPaymentMethod('CLIQ')} className={`p-3 border rounded-lg text-sm font-medium ${paymentMethod === 'CLIQ' ? 'border-primary-600 bg-primary-50 text-primary-700 ring-1 ring-primary-600' : 'hover:bg-gray-50'}`}>
+                        <button type="button" onClick={() => setPaymentMethod('CLIQ')} className={`p-3 border rounded-lg text-sm font-medium transition-colors ${paymentMethod === 'CLIQ' ? 'border-primary-600 bg-primary-50 text-primary-700 ring-1 ring-primary-600' : 'hover:bg-gray-50'}`}>
                             CLIQ Transfer
                         </button>
                     </div>
@@ -334,8 +328,9 @@ export function CheckoutDrawer({
 
   return (
     <>
-      <motion.div className="fixed inset-0 bg-black/60 z-40 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
-      <motion.div className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white z-50 flex flex-col shadow-2xl" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
+      {/* REFACTOR: Use semantic z-index class */}
+      <motion.div className="fixed inset-0 bg-black/60 z-overlay backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose} />
+      <motion.div className="fixed top-0 right-0 bottom-0 w-full max-w-md bg-white z-drawer flex flex-col shadow-2xl" initial={{ x: '100%' }} animate={{ x: 0 }} exit={{ x: '100%' }} transition={{ type: 'spring', stiffness: 300, damping: 30 }}>
         <div className="flex justify-between items-center p-4 border-b border-gray-200">
           <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
              <ShoppingCart className="w-5 h-5" /> Checkout

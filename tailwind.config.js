@@ -6,16 +6,23 @@ export default {
   ],
   theme: {
     extend: {
-      // 1. TYPOGRAPHY SYSTEM: Clear hierarchy for a "simple" UI
-      fontSize: {
-        'page': ['2rem', { lineHeight: '2.5rem', fontWeight: '700' }],      // 32px - Page Titles
-        'section': ['1.5rem', { lineHeight: '2rem', fontWeight: '600' }],    // 24px - Section Headers
-        'sub': ['1.125rem', { lineHeight: '1.75rem', fontWeight: '600' }],  // 18px - Sub-headers
-        'body': ['1rem', { lineHeight: '1.5rem', fontWeight: '400' }],       // 16px - Standard text
-        'sm': ['0.875rem', { lineHeight: '1.25rem', fontWeight: '400' }],   // 14px - Small text
-        'xs': ['0.75rem', { lineHeight: '1rem', fontWeight: '500' }],       // 12px - Labels/Badges
+      // 1. HIERARCHY: Strict Z-Index Scale
+      zIndex: {
+        'nav': '40',        // Sticky headers
+        'dropdown': '50',   // Select menus
+        'overlay': '60',    // Backdrops
+        'drawer': '70',     // Slide-overs
+        'modal': '80',      // Centered modals
+        'toast': '100',     // Notifications (Always on top)
       },
-      // 2. SPACING SYSTEM: Consistent 4px grid for clean whitespace
+      fontSize: {
+        'page': ['2rem', { lineHeight: '2.5rem', fontWeight: '700' }],
+        'section': ['1.5rem', { lineHeight: '2rem', fontWeight: '600' }],
+        'sub': ['1.125rem', { lineHeight: '1.75rem', fontWeight: '600' }],
+        'body': ['1rem', { lineHeight: '1.5rem', fontWeight: '400' }],
+        'sm': ['0.875rem', { lineHeight: '1.25rem', fontWeight: '400' }],
+        'xs': ['0.75rem', { lineHeight: '1rem', fontWeight: '500' }],
+      },
       spacing: {
         '1': '4px',
         '2': '8px',
@@ -32,7 +39,6 @@ export default {
         sans: ['Inter', 'sans-serif'],
       },
       colors: {
-        // Refined Royal Purple Palette
         primary: {
           50: '#fbfaff',
           100: '#f4effd',
@@ -41,36 +47,35 @@ export default {
           400: '#c09ff8',
           500: '#a576f6',
           600: '#9053f4', 
-          700: '#6D28D9', // Main Brand Color
+          700: '#6D28D9', // Main Brand
           800: '#5f22bc',
           900: '#4c1a92',
         },
-        // Plan-specific branding
         subscription: {
-          free: '#64748b',  // Slate
-          basic: '#3b82f6', // Blue
-          pro: '#6D28D9',   // Purple
+          free: '#64748b',
+          basic: '#3b82f6',
+          pro: '#6D28D9',
         },
-        // Semantic colors for UI feedback
         alert: {
-          success: '#16a34a', // Green
-          warning: '#f97316', // Orange
-          error: '#dc2626',   // Red
+          success: '#16a34a',
+          warning: '#f97316',
+          error: '#dc2626',
         },
-        // AI features special branding
         ai: {
           light: '#f4effd', 
           DEFAULT: '#6D28D9', 
           dark: '#4c1a92',  
         }
       },
-      // 3. MODERN SHADOWS: Softer and more subtle
+      // 2. DEPTH: Subtle, expensive-looking shadows
       boxShadow: {
         'sm': '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
-        'DEFAULT': '0 4px 12px 0 rgba(0, 0, 0, 0.05)', // Soft card shadow
-        'md': '0 6px 16px 0 rgba(0, 0, 0, 0.08)',      // Hover state
-        'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
-        'xl': '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+        'DEFAULT': '0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03)', // Softer than before
+        'md': '0 6px 16px 0 rgba(0, 0, 0, 0.08)',
+        'lg': '0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04)',
+        'xl': '0 20px 25px -5px rgba(0, 0, 0, 0.08), 0 10px 10px -5px rgba(0, 0, 0, 0.03)',
+        // Colored shadows for primary actions
+        'primary': '0 4px 14px 0 rgba(109, 40, 217, 0.3)', 
       }
     },
   },

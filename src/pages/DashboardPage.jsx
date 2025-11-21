@@ -3,8 +3,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { collection, onSnapshot, query, orderBy, limit } from 'firebase/firestore';
-// FIX: Added Filter, ChevronDown icons
-import { Loader2, Rocket, Sparkles, Calendar, TrendingUp, AlertCircle, ArrowRight, BarChart3, Clock, Filter, ChevronDown } from 'lucide-react';
+import { Loader2, Rocket, Sparkles, Calendar, TrendingUp, AlertCircle, ArrowRight, BarChart3, Clock, Filter, ChevronDown, Copy, Check } from 'lucide-react';
 import { useOutletContext, Link } from 'react-router-dom';
 
 // Widgets
@@ -23,6 +22,7 @@ import { ProductForm } from '../components/dashboard/ProductForm.jsx';
 import { RevenueChart } from '../RevenueChart.jsx'; 
 import { DashboardSkeleton } from '../components/shared/Skeleton.jsx';
 import { PLAN_DETAILS, CURRENCY_CODE } from '../config.js';
+import { SlideOver } from '../components/shared/SlideOver.jsx'; 
 
 import ErrorBoundary from '../components/shared/ErrorBoundary.jsx';
 
@@ -42,9 +42,27 @@ export function DashboardPage() {
   const [brands, setBrands] = useState([]);
   
   const [timeRange, setTimeRange] = useState(7);
-  // FIX: New state for mobile dropdown
   const [isFilterOpen, setIsFilterOpen] = useState(false); 
   
+  // Drawer control
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [showForm, setShowForm] = useState(false);
+
+  // Copy Link State
+  const [linkCopied, setLinkCopied] = useState(false);
+
+  const currentPlanId = store?.planId || 'free';
+  const currentPlanDetails = PLAN_DETAILS[currentPlanId];
+  const productLimit = currentPlanDetails?.limits?.products ?? 0;
+  const canAddMoreProducts = products.length < productLimit;
+  const isFree = currentPlanId === 'free';
+  const isPro = currentPlanId === 'pro';
+  
+  const isOnboardingComplete = products.length > 0 && (store.logoUrl || !isFree);
+  const defaultSlug = store?.name?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || user.uid;
+  const storeUrl = `${window.location.origin}/${store?.customPath || defaultSlug}`;
+  const chartDays = timeRange === 'this_month' ? new Date().getDate() : timeRange;
+
   const getDateRangeString = () => {
     const end = new Date();
     const start = new Date();
@@ -58,11 +76,6 @@ export function DashboardPage() {
   };
 
   const getProductFormProps = () => {
-    const currentPlanId = store?.planId || 'free';
-    const currentPlanDetails = PLAN_DETAILS[currentPlanId];
-    const productLimit = currentPlanDetails?.limits?.products ?? 0;
-    const canAddMoreProducts = products.length < productLimit;
-
     return {
       store,
       sendSystemNotification,
@@ -80,6 +93,58 @@ export function DashboardPage() {
       onOpenUpgradeModal,
     };
   };
+
+  // --- ROBUST COPY HANDLER ---
+  const handleCopyLink = () => {
+    // 1. Try Modern Method
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(storeUrl)
+        .then(() => {
+          setLinkCopied(true);
+          showSuccess("Store link copied!");
+          setTimeout(() => setLinkCopied(false), 2000);
+        })
+        .catch(() => {
+          // If it fails (e.g. permissions), try fallback
+          fallbackCopy(storeUrl);
+        });
+    } else {
+      // 2. Use Fallback for non-secure / older contexts
+      fallbackCopy(storeUrl);
+    }
+  };
+
+  const fallbackCopy = (text) => {
+    try {
+      const textArea = document.createElement("textarea");
+      textArea.value = text;
+      
+      // Ensure it's not visible on screen but part of DOM
+      textArea.style.position = "fixed"; 
+      textArea.style.left = "-9999px";
+      textArea.style.top = "0";
+      document.body.appendChild(textArea);
+      
+      textArea.focus();
+      textArea.select();
+      
+      const successful = document.execCommand('copy');
+      document.body.removeChild(textArea);
+      
+      if (successful) {
+        setLinkCopied(true);
+        showSuccess("Store link copied!");
+        setTimeout(() => setLinkCopied(false), 2000);
+      } else {
+        showError("Could not copy link automatically.");
+      }
+    } catch (err) {
+      console.error("Copy failed", err);
+      showError("Failed to copy link.");
+    }
+  };
+
+  const handleDone = () => setShowForm(false);
 
   useEffect(() => {
     if (!user) return;
@@ -172,17 +237,6 @@ export function DashboardPage() {
     return sortedProducts.slice(0, 5);
   }, [filteredOrders, products]);
 
-  if (!store || loading) return <DashboardSkeleton />;
-
-  const currentPlanId = store?.planId || 'free';
-  const isFree = currentPlanId === 'free';
-  const isPro = currentPlanId === 'pro';
-  
-  const isOnboardingComplete = products.length > 0 && (store.logoUrl || !isFree);
-  const defaultSlug = store?.name?.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '') || user.uid;
-  const storeUrl = `${window.location.origin}/${store?.customPath || defaultSlug}`;
-  const chartDays = timeRange === 'this_month' ? new Date().getDate() : timeRange;
-
   const getGreeting = () => {
     const name = store.ownerName?.split(' ')[0] || 'Merchant';
     if (pendingOrdersCount > 0) return `Action Required, ${name}`;
@@ -202,12 +256,14 @@ export function DashboardPage() {
     return `Last ${timeRange} Days Revenue`;
   };
 
+  if (!store || loading) return <DashboardSkeleton />;
+
   return (
     <>
       <AnimatePresence>
         {showFirstProductModal && (
           <motion.div
-            className="fixed inset-0 bg-black bg-opacity-60 z-40 flex items-center justify-center p-4"
+            className="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
           >
             <motion.div
@@ -236,7 +292,7 @@ export function DashboardPage() {
           initial="hidden" animate="visible" 
           variants={{ hidden: { opacity: 0 }, visible: { opacity: 1 } }}
         >
-          {/* 1. HEADER - Optimized for Mobile & Clarity */}
+          {/* 1. HEADER */}
           <div className="mb-8 flex flex-col lg:flex-row lg:items-end justify-between gap-6">
             <div className="flex-1">
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 tracking-tight">
@@ -248,44 +304,22 @@ export function DashboardPage() {
               </p>
             </div>
             
-            {/* FIX: Side-by-side layout on mobile */}
-            <div className="flex flex-row items-center gap-3 w-full sm:w-auto">
+            {/* ACTION BUTTONS */}
+            <div className="flex flex-row items-center gap-3 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 scrollbar-hide">
                {/* Filter Group */}
                {!isFree && (
-                 <div className="relative z-20">
-                   {/* DESKTOP: Standard Buttons */}
+                 <div className="relative z-20 flex-shrink-0">
                    <div className="hidden sm:flex bg-white border border-gray-200 p-1 rounded-lg shadow-sm">
-                      <button 
-                        onClick={() => setTimeRange(7)} 
-                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${timeRange === 7 ? 'bg-primary-50 text-primary-700 shadow-sm ring-1 ring-primary-100' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-                      >
-                        7D
-                      </button>
-                      <button 
-                        onClick={() => setTimeRange(30)} 
-                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${timeRange === 30 ? 'bg-primary-50 text-primary-700 shadow-sm ring-1 ring-primary-100' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-                      >
-                        30D
-                      </button>
-                      <button 
-                        onClick={() => setTimeRange('this_month')} 
-                        className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${timeRange === 'this_month' ? 'bg-primary-50 text-primary-700 shadow-sm ring-1 ring-primary-100' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-                      >
-                        Month
-                      </button>
+                      <button onClick={() => setTimeRange(7)} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${timeRange === 7 ? 'bg-primary-50 text-primary-700 shadow-sm ring-1 ring-primary-100' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>7D</button>
+                      <button onClick={() => setTimeRange(30)} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${timeRange === 30 ? 'bg-primary-50 text-primary-700 shadow-sm ring-1 ring-primary-100' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>30D</button>
+                      <button onClick={() => setTimeRange('this_month')} className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${timeRange === 'this_month' ? 'bg-primary-50 text-primary-700 shadow-sm ring-1 ring-primary-100' : 'text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}>Month</button>
                    </div>
-
-                   {/* MOBILE: Compact Dropdown */}
                    <div className="sm:hidden">
-                      <button 
-                        onClick={() => setIsFilterOpen(!isFilterOpen)}
-                        className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-700 shadow-sm"
-                      >
+                      <button onClick={() => setIsFilterOpen(!isFilterOpen)} className="flex items-center gap-2 px-3 py-2 bg-white border border-gray-200 rounded-lg text-xs font-medium text-gray-700 shadow-sm">
                         <Filter className="w-3.5 h-3.5" />
                         <span>{timeRange === 'this_month' ? 'This Month' : `${timeRange} Days`}</span>
                         <ChevronDown className="w-3.5 h-3.5 text-gray-400" />
                       </button>
-
                       {isFilterOpen && (
                         <div className="absolute left-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-30">
                           <button onClick={() => { setTimeRange(7); setIsFilterOpen(false); }} className="w-full text-left px-4 py-3 text-sm hover:bg-gray-50 border-b border-gray-50">Last 7 Days</button>
@@ -294,14 +328,20 @@ export function DashboardPage() {
                         </div>
                       )}
                    </div>
-
-                   {/* Date Context */}
-                   <div className="text-[10px] font-medium text-gray-400 uppercase tracking-wide mt-1 text-right sm:text-center pr-1">
-                     {getDateRangeString()}
-                   </div>
                  </div>
                )}
 
+               {/* Copy Link Button */}
+               <button 
+                 onClick={handleCopyLink}
+                 className="flex items-center justify-center px-3 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 transition-all shadow-sm flex-shrink-0"
+                 title="Copy Store Link"
+               >
+                 {linkCopied ? <Check className="w-4 h-4 text-green-600" /> : <Copy className="w-4 h-4" />}
+                 <span className="hidden sm:inline ml-2 text-sm font-medium">Copy Link</span>
+               </button>
+
+               {/* View Store Button */}
                <a 
                  href={storeUrl} 
                  target="_blank" 
@@ -310,9 +350,7 @@ export function DashboardPage() {
                  title="View Live Store"
                >
                   <span className="w-2 h-2 bg-green-400 rounded-full sm:mr-2 animate-pulse"></span>
-                  {/* Text visible only on small screens and up */}
                   <span className="hidden sm:inline">View Store</span>
-                  {/* Icon visible only on mobile */}
                   <span className="sm:hidden ml-1 font-bold">Store</span>
                </a>
             </div>
@@ -338,7 +376,7 @@ export function DashboardPage() {
           {!isFree ? (
              <AnimatePresence mode="wait">
                <motion.div 
-                 key={timeRange} // FIX: Triggers animation when timeRange changes
+                 key={timeRange} 
                  initial={{ opacity: 0, y: 5 }}
                  animate={{ opacity: 1, y: 0 }}
                  exit={{ opacity: 0, y: -5 }}
@@ -381,7 +419,6 @@ export function DashboardPage() {
                           Pending
                         </p>
                         <div className="flex items-center">
-                          {/* FIX: Added tabular-nums here too */}
                           <p className={`text-xl sm:text-2xl font-bold tabular-nums ${
                               pendingOrdersCount > 0 ? 'text-orange-700' : 'text-gray-700'
                           }`}>
@@ -401,92 +438,85 @@ export function DashboardPage() {
              </div>
           )}
 
-{/* 5. MAIN DASHBOARD GRID */}
-          {/* CHANGE 1: Added 'md:grid-cols-2' so tablets show 2 columns instead of 1 */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* 5. MAIN DASHBOARD GRID */}
+          <div className={`grid gap-8 ${isFree ? 'grid-cols-1' : 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3'}`}>
              
-             {/* LEFT COLUMN */}
-             {/* CHANGE 2: Added 'md:col-span-2' so the Chart takes full width on tablets */}
-             <div className="lg:col-span-2 md:col-span-2 space-y-8">
-                {isPro && (
-                   <div className="card p-6 min-h-[400px]">
-                      <div className="flex items-center justify-between mb-6">
-                        <h3 className="font-bold text-gray-900 text-lg flex items-center">
-                          <TrendingUp className="w-5 h-5 mr-2 text-primary-600"/> Revenue Trend
-                        </h3>
-                      </div>
-
-                      {/* Chart Area with "Rocket" Empty State */}
-                      <div className="h-72 bg-white rounded-xl flex items-center justify-center overflow-hidden relative">
-                         <ErrorBoundary>
-                           {orders.length > 0 ? (
-                             <RevenueChart orders={filteredOrders} days={chartDays} />
-                           ) : (
-                             <div className="text-center p-6 relative z-10">
-                                <div className="relative w-20 h-20 mx-auto mb-4">
-                                   {/* Pulsing Effect */}
-                                   <div className="absolute inset-0 bg-indigo-100 rounded-full animate-ping opacity-75"></div>
-                                   <div className="relative w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 border border-indigo-100">
-                                      <Rocket className="w-10 h-10 ml-1" />
-                                   </div>
-                                </div>
-                                <h4 className="text-lg font-bold text-gray-900">Ready for liftoff?</h4>
-                                <p className="text-sm text-gray-500 mt-2 max-w-xs mx-auto leading-relaxed">
-                                  Your chart is waiting for your first sale. Share your store link on social media to break the ice!
-                                </p>
-                             </div>
-                           )}
-                         </ErrorBoundary>
-                      </div>
-                   </div>
-                )}
-                
-                <ErrorBoundary>
-                  <TopProductsCard 
-                     currentPlanId={currentPlanId}
-                     topProducts={topProducts}
-                     onOpenUpgradeModal={onOpenUpgradeModal}
-                  />
-                </ErrorBoundary>
-             </div>
+             {/* LEFT COLUMN - Only render container if NOT free */}
+             {!isFree && (
+               <div className="lg:col-span-2 md:col-span-2 space-y-8">
+                  {/* Revenue Chart (Pro Only) */}
+                  {isPro && (
+                     <div className="card p-6 min-h-[400px]">
+                        <div className="flex items-center justify-between mb-6">
+                          <h3 className="font-bold text-gray-900 text-lg flex items-center">
+                            <TrendingUp className="w-5 h-5 mr-2 text-primary-600"/> Revenue Trend
+                          </h3>
+                        </div>
+                        <div className="h-72 bg-white rounded-xl flex flex-col items-center justify-center overflow-hidden relative">
+                           <ErrorBoundary>
+                             {orders.length > 0 ? (
+                               <RevenueChart orders={filteredOrders} days={chartDays} />
+                             ) : (
+                               <div className="text-center p-6 relative z-10">
+                                  <div className="relative w-20 h-20 mx-auto mb-4">
+                                     <div className="absolute inset-0 bg-indigo-100 rounded-full animate-ping opacity-75"></div>
+                                     <div className="relative w-20 h-20 bg-indigo-50 rounded-full flex items-center justify-center text-indigo-600 border border-indigo-100">
+                                        <Rocket className="w-10 h-10 ml-1" />
+                                     </div>
+                                  </div>
+                                  <h4 className="text-lg font-bold text-gray-900">Ready for liftoff?</h4>
+                                  <p className="text-sm text-gray-500 mt-2 max-w-xs mx-auto leading-relaxed">
+                                    Your chart is waiting for your first sale. Share your store link on social media to break the ice!
+                                  </p>
+                               </div>
+                             )}
+                           </ErrorBoundary>
+                        </div>
+                     </div>
+                  )}
+                  
+                  {/* Top Products */}
+                  <ErrorBoundary>
+                    <TopProductsCard 
+                       currentPlanId={currentPlanId}
+                       topProducts={topProducts}
+                       onOpenUpgradeModal={onOpenUpgradeModal}
+                    />
+                  </ErrorBoundary>
+               </div>
+             )}
 
              {/* RIGHT COLUMN */}
-             {/* This column will stack below the chart on tablets, or sit to the right on desktops */}
              <div className="space-y-8 md:col-span-2 lg:col-span-1">
-                {/* 1. Urgent Inventory Alerts */}
-                {lowStockCount > 0 && (
-                    <ErrorBoundary>
-                      <InventoryAlertCard products={products} currentPlanId={currentPlanId} onOpenUpgradeModal={onOpenUpgradeModal} />
-                    </ErrorBoundary>
-                )}
+                {/* 1. Inventory Alerts */}
+                <ErrorBoundary>
+                  <InventoryAlertCard products={products} currentPlanId={currentPlanId} onOpenUpgradeModal={onOpenUpgradeModal} />
+                </ErrorBoundary>
 
-                {/* 2. AI Coach */}
-                <div id="ai-coach">
-                    <ErrorBoundary>
-                      <AiCoachCard 
-                          currentPlanId={currentPlanId} 
-                          onOpenUpgradeModal={onOpenUpgradeModal} 
-                          topProducts={topProducts}
-                          orders={filteredOrders} 
-                      />
-                    </ErrorBoundary>
-                </div>
-
-                {/* 3. Standard Inventory (If not urgent) */}
-                {lowStockCount === 0 && (
-                    <ErrorBoundary>
-                      <InventoryAlertCard products={products} currentPlanId={currentPlanId} onOpenUpgradeModal={onOpenUpgradeModal} />
-                    </ErrorBoundary>
+                {/* 2. AI Coach (Hidden on Free) */}
+                {!isFree && (
+                  <div id="ai-coach">
+                      <ErrorBoundary>
+                        <AiCoachCard 
+                            currentPlanId={currentPlanId} 
+                            onOpenUpgradeModal={onOpenUpgradeModal} 
+                            topProducts={topProducts}
+                            orders={filteredOrders} 
+                        />
+                      </ErrorBoundary>
+                  </div>
                 )}
                 
-                {/* 4. Sales Target */}
-                <ErrorBoundary>
-                  <SalesTargetCard store={store} totalRevenue={proAnalytics.totalRevenue} currentPlanId={currentPlanId} onOpenUpgradeModal={onOpenUpgradeModal} />
-                </ErrorBoundary>
+                {/* 3. Sales Target (Hidden on Free) */}
+                {!isFree && (
+                  <ErrorBoundary>
+                    <SalesTargetCard store={store} totalRevenue={proAnalytics.totalRevenue} currentPlanId={currentPlanId} onOpenUpgradeModal={onOpenUpgradeModal} />
+                  </ErrorBoundary>
+                )}
              </div>
           </div>
 
-          {/* 6. UPGRADE TEASER */}
+          {/* 6. UPGRADE TEASER (For Free/Basic) */}
           {!isPro && (
              <div className="mt-12">
                 <ErrorBoundary>
@@ -496,6 +526,25 @@ export function DashboardPage() {
           )}
         </motion.main>
       )}
+      
+      <SlideOver isOpen={showForm} onClose={handleDone} maxWidth="max-w-2xl">
+        <ProductForm
+          store={store} 
+          sendSystemNotification={sendSystemNotification}
+          showError={showError}
+          showSuccess={showSuccess}
+          product={editingProduct}
+          onDone={handleDone}
+          db={db}
+          storage={storage}
+          functions={functions}
+          canAddMoreProducts={canAddMoreProducts}
+          productLimit={productLimit}
+          categories={categories}
+          brands={brands}
+          onOpenUpgradeModal={onOpenUpgradeModal} 
+        />
+      </SlideOver>
     </>
   );
 }

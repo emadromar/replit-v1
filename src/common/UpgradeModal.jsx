@@ -14,7 +14,7 @@ import {
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions'; // This isn't used, but it's okay
 import { X, Loader2, CheckCircle, AlertCircle, Upload } from 'lucide-react';
-
+import { CURRENCY_CODE } from '../config.js';
 // --- FIX: Corrected the path from ../../ to ../ ---
 import { PLAN_DETAILS } from '../config.js'; // <-- THIS WAS CHANGED
 

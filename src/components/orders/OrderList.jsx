@@ -5,6 +5,7 @@ import { LockedFeatureTeaser } from '../shared/LockedFeatureTeaser.jsx';
 import * as XLSX from 'xlsx';
 import { Download } from 'lucide-react';
 import { CURRENCY_CODE } from '../../config.js';
+
 const getStatusClasses = (status) => {
   switch (status) {
     case 'COMPLETED': return 'bg-alert-success/10 text-alert-success border border-alert-success/20';
@@ -30,9 +31,8 @@ export function OrderList({
   const isProPlan = currentPlanId === 'pro';
 
   const exportToExcel = () => {
-  if (orders.length === 0) return; // Do nothing if no orders
+  if (orders.length === 0) return; 
 
-  // 1. Format data for Excel
   const data = orders.map(order => ({
     'Order ID': order.id.slice(-6).toUpperCase(),
     'Date': order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : 'N/A',
@@ -43,37 +43,34 @@ export function OrderList({
     'Items': order.items ? order.items.map(i => `${i.quantity}x ${i.name}`).join(', ') : ''
   }));
 
-  // 2. Create Sheet
   const ws = XLSX.utils.json_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Orders");
-
-  // 3. Download
   XLSX.writeFile(wb, `Orders_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
 };
 
   return (
-    <div className="card p-6">
+    <div className="card h-full flex flex-col">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-4 border-b pb-4">
-        <h2 className="text-xl font-bold text-gray-900 flex items-center">
-            <ShoppingBag className="w-6 h-6 mr-3 text-primary-600"/> All Orders
+      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 border-b border-gray-100 pb-4">
+        <h2 className="text-lg font-bold text-gray-900 flex items-center">
+            <ShoppingBag className="w-5 h-5 mr-2 text-gray-500"/> All Orders
         </h2>
         <button 
-    onClick={exportToExcel}
-    className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-lg hover:bg-gray-50 text-sm font-medium transition-colors"
-  >
-    <Download className="w-4 h-4" />
-    <span className="hidden sm:inline">Export CSV</span>
-  </button>
+          onClick={exportToExcel}
+          className="btn-secondary-sm flex items-center gap-2 w-full md:w-auto"
+        >
+          <Download className="w-4 h-4" />
+          <span className="hidden sm:inline">Export CSV</span>
+        </button>
+        
         <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          {/* Pro Date Filter */}
           {isProPlan ? (
             <div className="w-full sm:w-auto">
               <select
                 value={orderDateFilter}
                 onChange={(e) => onDateFilterChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                className="input py-1.5 text-sm w-full"
               >
                 <option value="all">All Time</option>
                 <option value="today">Today</option>
@@ -84,14 +81,13 @@ export function OrderList({
              <LockedFeatureTeaser title="Filter by Date" planName="Pro" onUpgrade={onOpenUpgradeModal} />
           )}
           
-          {/* Basic Status Filter */}
           {!isFreePlan ? (
             <div className="w-full sm:w-auto">
               <select
                 id="order-status-filter"
                 value={statusFilter}
                 onChange={(e) => onStatusFilterChange(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm shadow-sm focus:ring-primary-500 focus:border-primary-500"
+                className="input py-1.5 text-sm w-full"
               >
                 {statusOptions.map((status) => (
                   <option key={status} value={status}>
@@ -104,7 +100,6 @@ export function OrderList({
         </div>
       </div>
       
-      {/* Free Plan Teaser */}
       {isFreePlan && (
          <LockedFeatureTeaser
             title="Order Filtering"
@@ -116,22 +111,20 @@ export function OrderList({
         />
       )}
 
-      {/* Summary */}
       {!isFreePlan && (
-        <div className="mb-4 p-4 bg-gray-50 rounded-lg border">
-          <h3 className="text-sm font-medium text-gray-600 uppercase">Order Summary</h3>
-          <p className="text-2xl font-bold text-gray-800">
-            {orders.length} <span className="text-lg font-normal text-gray-500">of {totalOrdersCount} total orders shown</span>
+        <div className="mb-4 px-4 py-3 bg-gray-50 rounded-lg border border-gray-100 flex justify-between items-center">
+          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Total Orders</span>
+          <p className="text-xl font-bold text-gray-900 tabular-nums">
+            {orders.length} <span className="text-sm font-normal text-gray-400">/ {totalOrdersCount}</span>
           </p>
         </div>
       )}
 
-      {/* List */}
-      <div className="space-y-4 max-h-[60rem] overflow-y-auto pr-2">
+      <div className="flex-1 overflow-y-auto pr-2 space-y-3 min-h-[300px]">
         {orders.length === 0 ? (
-          <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-xl">
-             <ShoppingBag className="w-12 h-12 mx-auto text-gray-400" />
-            <h3 className="mt-4 text-lg font-semibold text-gray-900">No orders found</h3>
+          <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
+             <ShoppingBag className="w-12 h-12 mx-auto text-gray-300" />
+            <h3 className="mt-4 text-base font-semibold text-gray-900">No orders yet</h3>
             <p className="text-gray-500 text-sm mt-1">
               {statusFilter !== 'ALL' || (isProPlan && orderDateFilter !== 'all')
                 ? 'No orders match your filters.'
@@ -142,20 +135,25 @@ export function OrderList({
           orders.map((order) => (
             <div
               key={order.id}
-              className="card card-hover p-4 cursor-pointer"
+              className="p-4 rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-sm transition-all cursor-pointer bg-white group"
               onClick={() => onViewDetails(order)}
             >
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
                     <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-900 truncate">{order.customerName}</p>
-                        <p className="text-sm text-gray-500">
-                            Order ID: <code className="text-xs bg-gray-100 px-1 rounded font-mono">{order.id.slice(-6).toUpperCase()}</code>
+                        <div className="flex items-center gap-2 mb-1">
+                           <p className="font-semibold text-gray-900 truncate">{order.customerName}</p>
+                           <span className="text-xs text-gray-400 tabular-nums font-mono px-1.5 py-0.5 bg-gray-100 rounded">#{order.id.slice(-6).toUpperCase()}</span>
+                        </div>
+                        <p className="text-xs text-gray-500 tabular-nums">
+                            {order.createdAt?.toDate ? new Date(order.createdAt.toDate()).toLocaleString() : 'N/A'}
                         </p>
                     </div>
-                    <div className="flex items-center gap-4 flex-shrink-0">
-                        <p className="font-bold text-lg text-alert-success">{CURRENCY_CODE} {order.total?.toFixed(2) || '0.00'}</p>
-                        <StatusBadge status={order.status} />
-                        <Eye className="w-5 h-5 text-gray-400 hidden sm:block" />
+                    <div className="flex items-center justify-between sm:justify-end gap-4 flex-shrink-0 w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100">
+                        <p className="font-bold text-gray-900 tabular-nums">{CURRENCY_CODE} {order.total?.toFixed(2) || '0.00'}</p>
+                        <div className="flex items-center gap-3">
+                           <StatusBadge status={order.status} />
+                           <Eye className="w-4 h-4 text-gray-300 group-hover:text-primary-600 transition-colors hidden sm:block" />
+                        </div>
                     </div>
                 </div>
             </div>

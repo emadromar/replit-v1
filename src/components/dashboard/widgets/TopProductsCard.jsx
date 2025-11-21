@@ -31,7 +31,7 @@ export function TopProductsCard({ topProducts, onOpenUpgradeModal, currentPlanId
       >
         <BarChart3 className="w-10 h-10 mx-auto text-gray-400 mb-3"/>
         <h3 className="text-lg font-semibold mb-1 text-gray-900 text-center">
-            No Sales Data
+            No sales yet
         </h3>
         <p className="text-sm text-gray-500 text-center">
             Analytics are based on **completed orders**.
@@ -50,7 +50,6 @@ export function TopProductsCard({ topProducts, onOpenUpgradeModal, currentPlanId
         <BarChart3 className="w-5 h-5 mr-2 text-primary-700"/> Top Selling Products
       </h3>
       <ul className="space-y-4 flex-1">
-        {/* CRITICAL FIX: Added 'index' to the map arguments below */}
         {topProducts.map((product, index) => (
           <li key={product.id} className="flex items-center space-x-3 border-b border-gray-100 pb-3 last:border-b-0 last:pb-0">
             <span className="text-xl font-bold text-primary-700 w-6 flex-shrink-0">
@@ -64,12 +63,8 @@ export function TopProductsCard({ topProducts, onOpenUpgradeModal, currentPlanId
             <div className="flex-1 min-w-0">
               <p className="font-semibold text-gray-800 truncate text-sm" title={product.name}>{product.name}</p>
               <div className="flex justify-between text-xs text-gray-500 mt-0.5">
-                {/* FIX: Hidden on small mobile, visible on sm+ */}
                 <span className='text-primary-700 hidden sm:inline'>Sold: <strong>{product.salesCount}</strong></span>
-                
-                {/* Revenue always visible, uses tabular-nums */}
                 <span className='text-alert-success tabular-nums'>
-                    {/* On mobile just show price, on desktop show label */}
                     <span className="hidden sm:inline">Rev: </span>
                     <strong>${CURRENCY_CODE} {product.totalRevenue.toFixed(2)}</strong>
                 </span>
