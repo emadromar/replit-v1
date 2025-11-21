@@ -1,7 +1,7 @@
 // src/config.js
 
 // --- 1. GLOBAL CURRENCY CONFIG ---
-export const CURRENCY_CODE = 'USD'; 
+export const CURRENCY_CODE = 'JOD'; 
 
 export const PLAN_DETAILS = {
   free: {

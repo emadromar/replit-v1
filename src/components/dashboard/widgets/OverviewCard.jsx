@@ -2,11 +2,12 @@
 import React from 'react';
 import { DollarSign, Package, TrendingUp } from 'lucide-react';
 import { CURRENCY_CODE } from '../../../config.js';
+
 export const OverviewCard = ({ totalRevenue, totalOrders }) => {
   return (
-    <div className="card p-8 bg-white shadow-sm border border-gray-100">
+    <div className="card card-padding bg-white shadow-sm border border-gray-200">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-lg font-bold text-gray-900 flex items-center">
+        <h2 className="card-header mb-0">
           <TrendingUp className="w-5 h-5 mr-2 text-primary-600" />
           Performance Overview
         </h2>

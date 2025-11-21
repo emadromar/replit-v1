@@ -2,14 +2,21 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Rocket, Check, Lock, ChevronRight, ChevronDown, ChevronUp } from 'lucide-react';
+import { Rocket, Check, Lock, ChevronRight, ChevronDown, ChevronUp, X } from 'lucide-react';
 
 export const SetupGuide = ({ store, products, onOpenUpgradeModal }) => {
   const [tasks, setTasks] = useState([]);
   const [isExpanded, setIsExpanded] = useState(false); 
+  const [isVisible, setIsVisible] = useState(true);
   const currentPlanId = store?.planId || 'free';
 
   useEffect(() => {
+    const isDismissed = localStorage.getItem(`setup_dismissed_${store?.id}`);
+    if (isDismissed) {
+      setIsVisible(false);
+      return;
+    }
+
     const newTasks = [
       { id: 'products', title: 'Add your first product', isComplete: products.length > 0, href: '/dashboard/products', plan: 'free' },
       { id: 'theme', title: 'Choose theme color', isComplete: store.themeColor !== '#6D28D9', href: '/dashboard/settings/general', plan: 'basic' },
@@ -22,11 +29,19 @@ export const SetupGuide = ({ store, products, onOpenUpgradeModal }) => {
     
   }, [store, products]);
 
+  const handleDismiss = (e) => {
+    e.stopPropagation();
+    if (window.confirm("Hide the setup guide? You can find these settings in the sidebar later.")) {
+        localStorage.setItem(`setup_dismissed_${store?.id}`, 'true');
+        setIsVisible(false);
+    }
+  };
+
   const completedTasks = tasks.filter((task) => task.isComplete).length;
   const isAllComplete = completedTasks === tasks.length;
   const progressPercent = (completedTasks / tasks.length) * 100;
 
-  if (isAllComplete) return null;
+  if (isAllComplete || !isVisible) return null;
 
   const renderTask = (task) => {
     const isLocked = (task.plan === 'basic' && currentPlanId === 'free');
@@ -84,12 +99,12 @@ export const SetupGuide = ({ store, products, onOpenUpgradeModal }) => {
 
   return (
     <motion.div 
-      className="card overflow-hidden transition-all duration-300" // REMOVED mb-8
+      className="card overflow-hidden transition-all duration-300"
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
     >
       <div 
-        className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer bg-white hover:bg-gray-50 transition-colors"
+        className="p-4 sm:p-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 cursor-pointer bg-white hover:bg-gray-50 transition-colors group"
         onClick={() => setIsExpanded(!isExpanded)}
       >
         <div className="flex items-center gap-3">
@@ -111,9 +126,18 @@ export const SetupGuide = ({ store, products, onOpenUpgradeModal }) => {
                     transition={{ duration: 0.8, ease: "easeOut" }}
                 />
             </div>
-            <button className="text-gray-400">
-                {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            </button>
+            <div className="flex items-center gap-2">
+                <button 
+                    onClick={handleDismiss}
+                    className="p-1.5 text-gray-300 hover:text-gray-500 hover:bg-gray-200 rounded-full transition-colors"
+                    title="Dismiss Guide"
+                >
+                    <X className="w-4 h-4" />
+                </button>
+                <button className="text-gray-400 group-hover:text-gray-600">
+                    {isExpanded ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                </button>
+            </div>
         </div>
       </div>
 
@@ -128,9 +152,9 @@ export const SetupGuide = ({ store, products, onOpenUpgradeModal }) => {
             >
                 <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-3 gap-4">
                     {tasks.map((task) => (
-                    <div key={task.id}>
-                        {renderTask(task)}
-                    </div>
+                      <div key={task.id}>
+                          {renderTask(task)}
+                      </div>
                     ))}
                 </div>
             </motion.div>

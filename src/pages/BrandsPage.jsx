@@ -1,4 +1,4 @@
-// src/BrandsPage.jsx
+// src/pages/BrandsPage.jsx
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
@@ -10,14 +10,12 @@ import {
   Plus, Tag, Trash2, Loader2, Image, X, Lock, TrendingUp, Upload
 } from 'lucide-react';
 
-// --- CONTEXT IMPORTS ---
-import { useFirebaseServices } from './contexts/FirebaseContext.jsx';
-import { useNotifications } from './contexts/NotificationContext.jsx';
-
-// --- COMPONENT IMPORTS ---
-import { ConfirmModal } from './ConfirmModal.jsx';
-import { ProductImage } from './ProductImage.jsx';
-import { Input } from './Forminput.jsx';
+// FIX: Path updates
+import { useFirebaseServices } from '../contexts/FirebaseContext.jsx';
+import { useNotifications } from '../contexts/NotificationContext.jsx';
+import { ConfirmModal } from '../ConfirmModal.jsx';
+import { ProductImage } from '../ProductImage.jsx';
+import { Input } from '../Forminput.jsx';
 import { useOutletContext } from 'react-router-dom';
 
 // --- Reusable Locked Feature Card (Local Definition) ---
@@ -106,7 +104,7 @@ function BrandSidebar({ brands, selectedBrand, onSelectBrand, onShowNewBrand, on
 }
 
 
-// --- COMPONENT 2: BrandForm (Redesigned) ---
+// --- COMPONENT 2: BrandForm ---
 function BrandForm({ store, brand, onDone, showError, showSuccess, db, storage }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');

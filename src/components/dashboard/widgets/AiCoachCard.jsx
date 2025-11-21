@@ -19,15 +19,11 @@ export const AiCoachCard = ({ onOpenUpgradeModal, currentPlanId, topProducts, or
     );
   }
   
-  // 1. Check Inventory
+  // Logic remains the same...
   const lowStockProduct = topProducts.find(p => p.salesCount > 0 && p.stock < 5);
-
-  // 2. Check Sales Trend (Real Logic)
   let trendMessage = "Data is stable.";
   if (orders.length > 0) {
-     // Calculate total revenue of last 5 orders
      const recentRevenue = orders.slice(0, 5).reduce((sum, o) => sum + (o.total || 0), 0);
-     
      if (recentRevenue > 0) {
          trendMessage = "Sales are flowing! Your recent orders look healthy. Keep pushing your top products on Instagram.";
      } else {
@@ -36,19 +32,17 @@ export const AiCoachCard = ({ onOpenUpgradeModal, currentPlanId, topProducts, or
   } else {
       trendMessage = "Waiting for your first sale. Have you shared your store link on social media yet?";
   }
-
-  // 3. Prioritize Inventory Warnings over General Trends
   const insightMessage = lowStockProduct 
     ? `Your top-selling product, **${lowStockProduct.name}**, is critically low with **${lowStockProduct.stock} units** left. RESTOCK URGENTLY!`
     : trendMessage;
 
   return (
     <motion.div 
-      className="card p-6 relative bg-indigo-50 border border-indigo-100 overflow-hidden"
+      className="card card-padding relative bg-indigo-50 border border-indigo-100 overflow-hidden"
       whileHover={{ y: -5 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
     >
-      <h2 className="text-lg font-semibold text-gray-900 flex items-center">
+      <h2 className="card-header text-indigo-900">
         <Sparkles className="w-5 h-5 mr-2 text-indigo-600" />
         AI Sales Coach
       </h2>

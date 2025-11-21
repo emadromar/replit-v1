@@ -1,4 +1,4 @@
-// src/components/auth/AuthPage.jsx
+// src/pages/AuthPage.jsx
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -18,8 +18,9 @@ import {
 } from 'lucide-react';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { useFirebaseServices } from '../../contexts/FirebaseContext';
-import { useNotifications } from '../../contexts/NotificationContext';
+// FIX: Path adjusted to go up one level to contexts
+import { useFirebaseServices } from '../contexts/FirebaseContext';
+import { useNotifications } from '../contexts/NotificationContext';
 
 // --- Reusable Animated Input ---
 function AnimatedInput({ id, label, ...props }) {
@@ -52,7 +53,6 @@ function AnimatedButton({ children, onClick, isDisabled = false, type = "button"
       onClick={onClick}
       disabled={isDisabled}
       className="group relative flex w-full justify-center rounded-lg border border-transparent bg-indigo-600 px-8 py-4 text-lg font-semibold text-white shadow-md disabled:opacity-50"
-      // whileHover={isDisabled ? {} : { scale: 1.03 }} // <-- FIX: REMOVED SCALE
       whileTap={isDisabled ? {} : { scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 300, damping: 15 }}
     >
@@ -72,9 +72,7 @@ function SecondaryButton({ children, onClick, isDisabled = false, type = "button
       type={type}
       onClick={onClick}
       disabled={isDisabled}
-      // --- FIX: Replaced scale with border/shadow on hover ---
       className="group relative flex w-full justify-center rounded-lg border-2 border-gray-300 bg-white px-8 py-4 text-lg font-semibold text-gray-700 shadow-sm transition-all duration-200 hover:border-indigo-400 hover:shadow-md disabled:opacity-50"
-      // whileHover={isDisabled ? {} : { scale: 1.03 }} // <-- FIX: REMOVED SCALE
       whileTap={isDisabled ? {} : { scale: 0.98 }}
       transition={{ type: 'spring', stiffness: 300, damping: 15 }}
     >

@@ -10,10 +10,10 @@ import {
     Loader2, Store, DollarSign, Package
 } from 'lucide-react';
 
-import { useFirebaseServices } from './contexts/FirebaseContext';
-import { useNotifications } from './contexts/NotificationContext';
-import { PLAN_DETAILS } from './config.js';
-import { FullScreenLoader } from './components/shared/FullScreenLoader.jsx';
+import { useFirebaseServices } from '../contexts/FirebaseContext.jsx';
+import { useNotifications } from '../contexts/NotificationContext.jsx';
+import { PLAN_DETAILS } from '../config.js';
+import { FullScreenLoader } from '../components/shared/FullScreenLoader.jsx';
 
 // Reusable Stat Card Component (Unchanged)
 const AdminStatCard = ({ title, value, icon: Icon, colorClass = 'text-primary-700' }) => (

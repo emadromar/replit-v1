@@ -4,12 +4,14 @@ import React, { useState, useEffect } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
-import { Loader2, Upload, Sparkles, Lock, Zap, Palette, Store, Smartphone } from 'lucide-react';
+// FIX 1: Consolidated imports (removed duplicate Palette/Wand2 lines)
+import { Loader2, Upload, Sparkles, Lock, Zap, Palette, Store, Wand2 } from 'lucide-react';
 import { Input } from './Forminput.jsx';
 import { ProductImage } from './ProductImage.jsx';
 import { LockedFeatureCard } from './components/shared/LockedFeatureCard.jsx'; 
 import { useOutletContext } from 'react-router-dom';
-import { Wand2, Palette } from 'lucide-react';
+import { CURRENCY_CODE } from './config.js'; // Ensure this is imported
+
 // --- Helper ---
 const createSlug = (text) => {
   if (!text) return '';
@@ -30,7 +32,8 @@ export function StoreSettingsForm() {
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
-const [themeMood, setThemeMood] = useState('Trustworthy');
+  const [themeMood, setThemeMood] = useState('Trustworthy');
+  
   const currentPlanId = store?.planId || 'free';
   const isFreePlan = currentPlanId === 'free';
   const isBasicPlan = currentPlanId === 'basic';
@@ -67,10 +70,10 @@ const [themeMood, setThemeMood] = useState('Trustworthy');
 
   const handleGenerateTheme = async () => {
     if (!name) return showError('Please enter a store name first');
-    setIsGenerating(true);
+    // FIX 2: Use correct state setter (setAiLoading instead of setIsGenerating)
+    setAiLoading(true); 
     try {
       const generateColor = httpsCallable(functions, 'generateBrandColor');
-      // Pass the mood here
       const result = await generateColor({ storeName: name, mood: themeMood }); 
       setThemeColor(result.data.color);
       showSuccess(`Generated ${themeMood} theme!`);
@@ -78,9 +81,9 @@ const [themeMood, setThemeMood] = useState('Trustworthy');
       console.error('Theme Gen Error:', error);
       showError('Failed to generate theme');
     } finally {
-      setIsGenerating(false);
+      setAiLoading(false);
     }
-};
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -134,7 +137,7 @@ const [themeMood, setThemeMood] = useState('Trustworthy');
           </h2>
           <div className="flex items-start gap-4">
             <div className="flex-1">
-              <Input label="Monthly Revenue Goal (${CURRENCY_CODE})" type="number" step="1" min="0" value={monthlyTarget} onChange={setMonthlyTarget} id="store-target" placeholder="e.g., 1000" />
+              <Input label={`Monthly Revenue Goal (${CURRENCY_CODE})`} type="number" step="1" min="0" value={monthlyTarget} onChange={setMonthlyTarget} id="store-target" placeholder="e.g., 1000" />
               <p className="text-xs text-gray-500 mt-2">We'll track this on your dashboard to keep you motivated.</p>
             </div>
           </div>
@@ -171,7 +174,8 @@ const [themeMood, setThemeMood] = useState('Trustworthy');
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <label className="block text-sm font-medium text-gray-700">Theme Color</label>
-                <button type="button" onClick={generateAiColor} disabled={aiLoading} className="text-xs flex items-center text-ai font-semibold hover:underline disabled:opacity-50">
+                {/* FIX 3: Corrected onClick handler name */}
+                <button type="button" onClick={handleGenerateTheme} disabled={aiLoading} className="text-xs flex items-center text-ai font-semibold hover:underline disabled:opacity-50">
                   {aiLoading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
                   {aiLoading ? "Generating..." : "Ask AI to choose"}
                 </button>
@@ -218,7 +222,7 @@ const [themeMood, setThemeMood] = useState('Trustworthy');
         <LockedFeatureCard title="Custom Store Link" description="Get a clean, professional URL for your store (e.g., webjor.live/my-brand)." icon={Lock} planName="Pro" onUpgrade={onOpenUpgradeModal} />
       )}
 
-      {/* Sticky Save Button (Mobile Friendly) */}
+      {/* Sticky Save Button */}
       <div className="fixed bottom-4 left-4 right-4 md:static md:block z-20 md:pt-4">
          <button type="submit" disabled={loading || uploadLoading} className="btn-primary w-full md:w-auto md:px-8 shadow-lg md:shadow-sm">
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save All Settings'}

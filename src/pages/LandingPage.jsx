@@ -1,8 +1,8 @@
-// src/LandingPage.jsx
+// src/pages/LandingPage.jsx
 
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Store, Zap, Layout, Shield, ArrowRight, CheckCircle } from 'lucide-react';
+import { Store, Zap, Layout, Shield, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export function LandingPage() {
@@ -42,20 +42,19 @@ export function LandingPage() {
       </section>
 
       {/* Social Proof Strip */}
-<div className="border-y border-gray-100 bg-white py-8">
-  <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <p className="text-center text-sm font-semibold text-gray-500 uppercase tracking-wider mb-6">
-      Trusted by ambitious entrepreneurs in Jordan
-    </p>
-    <div className="flex flex-wrap justify-center gap-8 md:gap-16 opacity-60 grayscale">
-       {/* Placeholders for logos - you can replace with text if no logos yet */}
-       <span className="text-xl font-bold text-gray-400 flex items-center gap-2"><Store className="w-5 h-5"/> AmmanFashion</span>
-       <span className="text-xl font-bold text-gray-400 flex items-center gap-2"><Zap className="w-5 h-5"/> TechJo</span>
-       <span className="text-xl font-bold text-gray-400 flex items-center gap-2"><Layout className="w-5 h-5"/> HomeStyle</span>
-       <span className="text-xl font-bold text-gray-400 flex items-center gap-2"><Shield className="w-5 h-5"/> SafeBuy</span>
-    </div>
-  </div>
-</div>
+      <div className="border-y border-gray-100 bg-white py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <p className="text-center text-sm font-semibold text-gray-500 uppercase tracking-wider mb-6">
+            Trusted by ambitious entrepreneurs in Jordan
+          </p>
+          <div className="flex flex-wrap justify-center gap-8 md:gap-16 opacity-60 grayscale">
+             <span className="text-xl font-bold text-gray-400 flex items-center gap-2"><Store className="w-5 h-5"/> AmmanFashion</span>
+             <span className="text-xl font-bold text-gray-400 flex items-center gap-2"><Zap className="w-5 h-5"/> TechJo</span>
+             <span className="text-xl font-bold text-gray-400 flex items-center gap-2"><Layout className="w-5 h-5"/> HomeStyle</span>
+             <span className="text-xl font-bold text-gray-400 flex items-center gap-2"><Shield className="w-5 h-5"/> SafeBuy</span>
+          </div>
+        </div>
+      </div>
 
       {/* Features Grid */}
       <section className="py-24 bg-gray-50">

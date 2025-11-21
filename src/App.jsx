@@ -13,32 +13,32 @@ import { CartProvider } from './contexts/CartContext.jsx';
 
 // --- CORE PAGES & COMPONENTS ---
 import { PublicLayout } from './components/layout/PublicLayout.jsx'; 
-import { AuthPage } from './components/auth/AuthPage.jsx';
-import { LandingPage } from './LandingPage.jsx';
-import { PricingPage } from './PricingPage.jsx';
 import { FullScreenLoader } from './components/shared/FullScreenLoader.jsx';
-import { PublicStorePage } from './PublicStorePage.jsx'; 
 import { useFirebaseServices } from './contexts/FirebaseContext.jsx';
 import { useNotifications } from './contexts/NotificationContext.jsx';
 import { onSnapshot, doc } from 'firebase/firestore';
-// import { StoreSettingsForm } from './StoreSettingsForm.jsx'; // <-- REMOVED (Fixed Eager Load)
-// import { MarketingPage } from './components/dashboard/MarketingPage.jsx'; // <-- REMOVED (Fixed Eager Load)
-
 import { UpgradeModal } from './common/UpgradeModal.jsx';
 import { ensureStoreExists } from './services/storeInitializer.js';
 
-// --- LAZY LOADED DASHBOARD PAGES ---
-const DashboardPage = lazy(() => import('./components/dashboard/DashboardPage.jsx').then(module => ({ default: module.DashboardPage })));
-const ProductsPage = lazy(() => import('./ProductsPage.jsx').then(module => ({ default: module.ProductsPage })));
-const OrdersPage = lazy(() => import('./OrdersPage.jsx').then(module => ({ default: module.OrdersPage })));
-const SettingsPage = lazy(() => import('./SettingsPage.jsx').then(module => ({ default: module.SettingsPage })));
-const ProfilePage = lazy(() => import('./ProfilePage.jsx').then(module => ({ default: module.ProfilePage })));
-const BrandsPage = lazy(() => import('./BrandsPage.jsx').then(module => ({ default: module.BrandsPage })));
-const AdminPage = lazy(() => import('./AdminPage.jsx').then(module => ({ default: module.AdminPage })));
-const DashboardNav = lazy(() => import('./components/dashboard/DashboardNav.jsx').then(module => ({ default: module.DashboardNav })));
+// --- NEW: Updated Imports for Pages in src/pages/ ---
+import { AuthPage } from './pages/AuthPage.jsx';
+import { LandingPage } from './pages/LandingPage.jsx';
+import { PricingPage } from './pages/PricingPage.jsx';
+import { PublicStorePage } from './pages/PublicStorePage.jsx'; 
 
-// --- NEW LAZY IMPORTS (Fixes Bug #5) ---
-const MarketingPage = lazy(() => import('./components/dashboard/MarketingPage.jsx').then(module => ({ default: module.MarketingPage })));
+// --- LAZY LOADED DASHBOARD PAGES (Updated Paths) ---
+const DashboardPage = lazy(() => import('./pages/DashboardPage.jsx').then(module => ({ default: module.DashboardPage })));
+const ProductsPage = lazy(() => import('./pages/ProductsPage.jsx').then(module => ({ default: module.ProductsPage })));
+const OrdersPage = lazy(() => import('./pages/OrdersPage.jsx').then(module => ({ default: module.OrdersPage })));
+const SettingsPage = lazy(() => import('./pages/SettingsPage.jsx').then(module => ({ default: module.SettingsPage })));
+const ProfilePage = lazy(() => import('./pages/ProfilePage.jsx').then(module => ({ default: module.ProfilePage })));
+const BrandsPage = lazy(() => import('./pages/BrandsPage.jsx').then(module => ({ default: module.BrandsPage })));
+const AdminPage = lazy(() => import('./pages/AdminPage.jsx').then(module => ({ default: module.AdminPage })));
+const MarketingPage = lazy(() => import('./pages/MarketingPage.jsx').then(module => ({ default: module.MarketingPage })));
+
+// --- Components still in src/ or src/components ---
+const DashboardNav = lazy(() => import('./components/dashboard/DashboardNav.jsx').then(module => ({ default: module.DashboardNav })));
+// StoreSettingsForm is acting as a sub-page, keeping it in src root for now as per existing structure
 const StoreSettingsForm = lazy(() => import('./StoreSettingsForm.jsx').then(module => ({ default: module.StoreSettingsForm })));
 
 
@@ -157,7 +157,9 @@ function AppContent() {
 
   return (
     <>
-      <Toaster position="bottom-center" toastOptions={{ duration: 3000 }} />
+      {/* FIX: Position changed to top-center to avoid mobile nav collision */}
+      <Toaster position="top-center" toastOptions={{ duration: 3000 }} />
+      
       <AnimatePresence mode="wait">
         <Routes location={location} key={location.pathname}>
           
@@ -181,12 +183,10 @@ function AppContent() {
             <Route element={<DashboardLayout />}>
               <Route index element={<Suspense fallback={<FullScreenLoader />}><DashboardPage /></Suspense>} />
               <Route path="products" element={<Suspense fallback={<FullScreenLoader />}><ProductsPage /></Suspense>} />
-              {/* Fixed Lazy Loading for MarketingPage */}
               <Route path="marketing" element={<Suspense fallback={<FullScreenLoader />}><MarketingPage /></Suspense>} />
               <Route path="orders" element={<Suspense fallback={<FullScreenLoader />}><OrdersPage /></Suspense>} />
               <Route path="brands" element={<Suspense fallback={<FullScreenLoader />}><BrandsPage /></Suspense>} />
               <Route path="settings" element={<Suspense fallback={<FullScreenLoader />}><SettingsPage /></Suspense>}>
-                {/* Fixed Lazy Loading for StoreSettingsForm */}
                 <Route path="general" element={<Suspense fallback={<FullScreenLoader />}><StoreSettingsForm /></Suspense>} />
                 <Route path="profile" element={<Suspense fallback={<FullScreenLoader />}><ProfilePage /></Suspense>} />
                 <Route index element={<Navigate to="general" replace />} />

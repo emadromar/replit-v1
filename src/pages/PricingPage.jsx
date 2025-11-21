@@ -1,10 +1,12 @@
-// src/PricingPage.jsx
+// src/pages/PricingPage.jsx
 
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Check, ArrowRight, X, Sparkles, MessageSquare, Zap, TrendingUp } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { CURRENCY_CODE } from './config.js';
+// FIX: Path update
+import { CURRENCY_CODE } from '../config.js';
+
 // --- CONFIGURATION ---
 const features = {
   CORE: [
@@ -129,7 +131,6 @@ export function PricingPage() {
                 <p className={`text-sm ${plan.id === 'pro' ? 'text-primary-200' : 'text-gray-500'}`}>{plan.billed}</p>
                 <p className={`mt-2 text-sm flex-grow ${plan.id === 'pro' ? 'text-primary-100' : 'text-gray-600'}`}>{plan.description}</p>
                 
-                {/* FIX: UNIFIED BUTTON STYLES */}
                 <Link 
                   to="/signup" 
                   className={`mt-8 w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center transition-all shadow-sm ${plan.buttonColor}`}

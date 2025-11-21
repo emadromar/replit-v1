@@ -1,4 +1,4 @@
-// src/ProductsPage.jsx
+// src/pages/ProductsPage.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
 import {
@@ -10,18 +10,16 @@ import { httpsCallable } from 'firebase/functions';
 import { useOutletContext } from 'react-router-dom';
 
 // Contexts & Components
-import { useNotifications } from './contexts/NotificationContext.jsx';
-import { ConfirmModal } from './ConfirmModal.jsx';
-import { CategorySidebar } from './CategorySidebar.jsx';
-import { CategoryModal } from './CategoryModal.jsx';
-import { ProductImport } from './ProductImport.jsx';
-import { PLAN_DETAILS } from './config.js';
-import { ProductForm } from './components/dashboard/ProductForm.jsx';
-import { LockedFeatureCard } from './components/shared/LockedFeatureCard.jsx'; 
-import { AiMarketingModal } from './components/dashboard/AiMarketingModal.jsx';
-
-// --- NEW IMPORT ---
-import { ProductList } from './components/products/ProductList.jsx';
+import { useNotifications } from '../contexts/NotificationContext.jsx';
+import { ConfirmModal } from '../ConfirmModal.jsx';
+import { CategorySidebar } from '../CategorySidebar.jsx';
+import { CategoryModal } from '../CategoryModal.jsx';
+import { ProductImport } from '../ProductImport.jsx';
+import { PLAN_DETAILS } from '../config.js';
+import { ProductForm } from '../components/dashboard/ProductForm.jsx';
+import { LockedFeatureCard } from '../components/shared/LockedFeatureCard.jsx'; 
+import { AiMarketingModal } from '../components/dashboard/AiMarketingModal.jsx';
+import { ProductList } from '../components/products/ProductList.jsx';
 
 export function ProductsPage() {
   const { 
@@ -32,6 +30,9 @@ export function ProductsPage() {
   const { db, storage, functions } = services;
   
   const [products, setProducts] = useState([]);
+  // FIX: Add loading state for products
+  const [productsLoading, setProductsLoading] = useState(true);
+  
   const [editingProduct, setEditingProduct] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [productSearchTerm, setProductSearchTerm] = useState('');
@@ -90,9 +91,17 @@ export function ProductsPage() {
     const storeId = user.uid;
     const productsRef = collection(db, 'stores', storeId, 'products');
     const q = query(productsRef, orderBy('createdAt', 'desc'));
+    
+    // FIX: Set loading true initially
+    setProductsLoading(true);
+    
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setProducts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-    }, (error) => { showError('Failed to load products.'); });
+      setProductsLoading(false); // FIX: Set loading false when data arrives
+    }, (error) => { 
+        showError('Failed to load products.'); 
+        setProductsLoading(false);
+    });
     return () => unsubscribe();
   }, [store, db, showError]);
 
@@ -160,7 +169,6 @@ export function ProductsPage() {
   const handleGenerateCaptions = async (product) => {
     if (!product) return;
     
-    // Correct plan check: Only block if 'free'
     if (store.planId === 'free') {
       showError("AI Marketing is a Basic/Pro feature. Please upgrade to use it.");
       onOpenUpgradeModal();
@@ -218,17 +226,68 @@ export function ProductsPage() {
   const subscriptionEndDate = store?.subscriptionEnds?.toDate();
   const isSubscriptionActive = subscriptionEndDate ? subscriptionEndDate > new Date() : currentPlanId === 'free';
   const canUseBulkImport = currentPlanId === 'pro' && isSubscriptionActive;
-  
   const canUseCategories = isBasicPlan || isProPlan;
 
   return (
     <div className="max-w-screen-2xl mx-auto p-4 md:p-8">
+      
+      {/* --- UX UPGRADE: Mobile Horizontal Scroll --- */}
+      {canUseCategories && (
+        <div className="lg:hidden mb-6 overflow-x-auto pb-2 scrollbar-hide">
+           <div className="flex space-x-2">
+              <button
+                onClick={() => handleSelectCategory('all')}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors shadow-sm ${
+                  selectedCategory === 'all' 
+                    ? 'bg-primary-600 text-white' 
+                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                }`}
+              >
+                All Products
+              </button>
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => handleSelectCategory(cat.id)}
+                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors shadow-sm ${
+                    selectedCategory === cat.id
+                      ? 'bg-primary-600 text-white'
+                      : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+                  }`}
+                >
+                  {cat.name}
+                </button>
+              ))}
+              <button 
+                onClick={() => setIsCategoryModalOpen(true)}
+                className="px-3 py-2 rounded-full bg-primary-50 text-primary-700 text-sm font-medium whitespace-nowrap border border-primary-100 flex items-center"
+              >
+                <Plus className="w-4 h-4 mr-1"/> New
+              </button>
+           </div>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         
-        {/* --- LEFT "TOOLS" COLUMN --- */}
+        {/* Tools Column (Sidebar) */}
         <div className="lg:col-span-1 space-y-6">
           
-          {showForm || editingProduct ? (
+          {/* Add Product Button - Top Button (Kept for Desktop/Tablet) */}
+          {!showForm && !editingProduct && (
+            <button
+              onClick={handleAddNew}
+              disabled={!canAddMoreProducts}
+              className="btn-primary w-full hidden md:flex" // Hide on pure mobile, show on tablet/desktop
+              title={!canAddMoreProducts ? `Product limit reached (${productLimit})` : "Add a new product"}
+            >
+              <Plus className="w-5 h-5 mr-2" />
+              Add New Product
+            </button>
+          )}
+
+          {/* Product Form - Always Visible when active */}
+          {(showForm || editingProduct) && (
             <ProductForm
               store={store} 
               sendSystemNotification={sendSystemNotification}
@@ -245,61 +304,57 @@ export function ProductsPage() {
               brands={brands}
               onOpenUpgradeModal={onOpenUpgradeModal} 
             />
-          ) : (
-            <button
-              onClick={handleAddNew}
-              disabled={!canAddMoreProducts}
-              className="btn-primary w-full"
-              title={!canAddMoreProducts ? `Product limit reached (${productLimit})` : "Add a new product"}
-            >
-              <Plus className="w-5 h-5 mr-2" />
-              Add New Product
-            </button>
           )}
 
-          {canUseCategories ? (
-            <div className="card p-4">
-              <CategorySidebar
-                categories={categories}
-                selectedCategory={selectedCategory}
-                onSelectCategory={handleSelectCategory}
-                onShowNewCategoryModal={() => setIsCategoryModalOpen(true)}
-                onDeleteCategory={handleDeleteCategory}
+          {/* Category Sidebar - HIDDEN ON MOBILE (Replaced by Scroll) */}
+          <div className="hidden lg:block">
+            {canUseCategories ? (
+              <div className="card p-4">
+                <CategorySidebar
+                  categories={categories}
+                  selectedCategory={selectedCategory}
+                  onSelectCategory={handleSelectCategory}
+                  onShowNewCategoryModal={() => setIsCategoryModalOpen(true)}
+                  onDeleteCategory={handleDeleteCategory}
+                />
+              </div>
+            ) : (
+              <LockedFeatureCard
+                title="Organize Your Store"
+                description="Group your products into categories and brands to help customers find what they want, faster."
+                icon={Tag}
+                planName="Basic"
+                onUpgrade={onOpenUpgradeModal}
               />
-            </div>
-          ) : (
-            <LockedFeatureCard
-              title="Organize Your Store"
-              description="Group your products into categories and brands to help customers find what they want, faster."
-              icon={Tag}
-              planName="Basic"
-              onUpgrade={onOpenUpgradeModal}
-            />
-          )}
+            )}
+          </div>
           
-          {canUseBulkImport ? (
-            <ProductImport storeId={user.uid} db={db} showError={showError} showSuccess={showSuccess} />
-          ) : (
-            <div className="card p-6 space-y-3">
-              <h2 className="text-lg font-semibold flex items-center text-gray-800">
-                <Upload className="w-5 h-5 mr-2 text-primary-700" />
-                Bulk Product Import
-              </h2>
-              <p className="text-sm text-gray-600">
-                Quickly add many products using an Excel or CSV file.
-              </p>
-              <button
-                onClick={onOpenUpgradeModal}
-                className="btn-locked w-full"
-              >
-                <Lock className="w-4 h-4 mr-1.5" />
-                Upgrade to Pro to Enable
-              </button>
-            </div>
-          )}
+          {/* Bulk Import - Hidden on Mobile */}
+          <div className="hidden lg:block">
+            {canUseBulkImport ? (
+              <ProductImport storeId={user.uid} db={db} showError={showError} showSuccess={showSuccess} />
+            ) : (
+              <div className="card p-6 space-y-3">
+                <h2 className="text-lg font-semibold flex items-center text-gray-800">
+                  <Upload className="w-5 h-5 mr-2 text-primary-700" />
+                  Bulk Product Import
+                </h2>
+                <p className="text-sm text-gray-600">
+                  Quickly add many products using an Excel or CSV file.
+                </p>
+                <button
+                  onClick={onOpenUpgradeModal}
+                  className="btn-locked w-full"
+                >
+                  <Lock className="w-4 h-4 mr-1.5" />
+                  Upgrade to Pro to Enable
+                </button>
+              </div>
+            )}
+          </div>
         </div>
 
-        {/* --- RIGHT "CONTENT" COLUMN --- */}
+        {/* Content Column */}
         <div className="lg:col-span-3">
           <ProductList
             products={filteredProducts}
@@ -315,11 +370,27 @@ export function ProductsPage() {
             inventoryTitle={inventoryTitle}
             productSort={productSort}
             onSortChange={setProductSort}
+            isLoading={productsLoading} // FIX: Pass loading state
           />
         </div>
       </div>
 
-      {/* --- MODALS --- */}
+      {/* --- UX UPGRADE: Floating Action Button (FAB) for Mobile --- */}
+      {!showForm && !editingProduct && (
+        <button
+          onClick={handleAddNew}
+          disabled={!canAddMoreProducts}
+          className={`lg:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
+            !canAddMoreProducts ? 'bg-gray-400 text-gray-200' : 'bg-primary-700 text-white'
+          }`}
+          aria-label="Add Product"
+          style={{ boxShadow: '0 4px 14px rgba(0,0,0,0.25)' }}
+        >
+          <Plus className="w-8 h-8" />
+        </button>
+      )}
+
+      {/* Modals */}
       <CategoryModal
         isOpen={isCategoryModalOpen}
         onClose={() => setIsCategoryModalOpen(false)}

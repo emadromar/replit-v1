@@ -1,10 +1,10 @@
-// src/ProfilePage.jsx
+// src/pages/ProfilePage.jsx
 
 import React, { useState } from 'react';
 import { useOutletContext } from 'react-router-dom';
 import { getAuth, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { Loader2, Save, User, Lock } from 'lucide-react';
-import { Input } from './Forminput.jsx';
+import { Input } from '../Forminput.jsx'; // Adjusted import
 
 // --- Form Section Component ---
 const FormSection = ({ title, description, children }) => (

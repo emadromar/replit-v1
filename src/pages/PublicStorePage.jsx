@@ -1,4 +1,4 @@
-// src/PublicStorePage.jsx
+// src/pages/PublicStorePage.jsx
 
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
@@ -11,21 +11,21 @@ import {
   Phone, Clock, Star
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CURRENCY_CODE } from './config.js';
+import { CURRENCY_CODE } from '../config.js';
 
-import { useFirebaseServices } from './contexts/FirebaseContext.jsx';
-import { useCart } from './contexts/CartContext.jsx';
-import { CheckoutDrawer } from './components/store/CheckoutDrawer.jsx';
-import { ProductImage } from './ProductImage.jsx';
-import { FullScreenLoader } from './components/shared/FullScreenLoader.jsx';
-import { NotifyMeModal } from './NotifyMeModal.jsx';
-import { useNotifications } from './contexts/NotificationContext.jsx';
+import { useFirebaseServices } from '../contexts/FirebaseContext.jsx';
+import { useCart } from '../contexts/CartContext.jsx';
+import { CheckoutDrawer } from '../components/store/CheckoutDrawer.jsx';
+import { ProductImage } from '../ProductImage.jsx';
+import { FullScreenLoader } from '../components/shared/FullScreenLoader.jsx';
+import { NotifyMeModal } from '../NotifyMeModal.jsx';
+import { useNotifications } from '../contexts/NotificationContext.jsx';
 
 // Store Components
-import { LiveShopperSignals } from './components/store/LiveShopperSignals.jsx';
-import { SocialConfidenceBadges } from './components/store/SocialConfidenceBadges.jsx';
-import { DeliveryActivityMap } from './components/store/DeliveryActivityMap.jsx';
-import { ProductCard } from './components/store/ProductCard.jsx'; // <-- NEW IMPORT
+import { LiveShopperSignals } from '../components/store/LiveShopperSignals.jsx';
+import { SocialConfidenceBadges } from '../components/store/SocialConfidenceBadges.jsx';
+import { DeliveryActivityMap } from '../components/store/DeliveryActivityMap.jsx';
+import { ProductCard } from '../components/store/ProductCard.jsx'; 
 
 // --- INTERNAL COMPONENT: Product Detail Modal ---
 function ProductDetailModal({ product, isOpen, onClose, onAddToCart, themeColor }) {
@@ -103,7 +103,7 @@ function ProductDetailModal({ product, isOpen, onClose, onAddToCart, themeColor 
   );
 }
 
-// --- SMART URGENCY TEASER (Copied from previous file, kept logic intact) ---
+// --- SMART URGENCY TEASER ---
 const SmartUrgencyTeaser = ({ isPro, onAddToCart, products, onVisibilityChange }) => { 
     const [showTeaser, setShowTeaser] = useState(false);
     const [productTeaser, setProductTeaser] = useState(null);
@@ -209,7 +209,7 @@ const SmartUrgencyTeaser = ({ isPro, onAddToCart, products, onVisibilityChange }
 export function PublicStorePage() {
   const { storeSlug } = useParams();
   const { db } = useFirebaseServices();
-  const { showError, showSuccess, sendSystemNotification } = useNotifications(); // Added sendSystemNotification
+  const { showError, showSuccess, sendSystemNotification } = useNotifications(); 
   
   const [store, setStore] = useState(null);
   const [products, setProducts] = useState([]);
@@ -220,20 +220,19 @@ export function PublicStorePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   
-  // State for UI Elements
   const [isCheckoutOpen, setIsCheckoutOpen] = useState(false);
   const [isNotifyModalOpen, setIsNotifyModalOpen] = useState(false);
   const [notifyProduct, setNotifyProduct] = useState(null);
   const [isRecoveryBubbleVisible, setIsRecoveryBubbleVisible] = useState(false);
-  const [suggestions, setSuggestions] = useState([]); // Added suggestions state
-  const [isSearchFocused, setIsSearchFocused] = useState(false); // Added focus state
-  const searchContainerRef = useRef(null); // Added ref
+  const [suggestions, setSuggestions] = useState([]); 
+  const [isSearchFocused, setIsSearchFocused] = useState(false); 
+  const searchContainerRef = useRef(null); 
 
 
   const { addToCart, getItemCount } = useCart(store ? store.id : null);
   const cartItemCount = store ? getItemCount() : 0;
   
-  // --- Data Fetching (Unchanged) ---
+  // --- Data Fetching ---
   useEffect(() => {
     if (!storeSlug || !db) return;
 
@@ -297,7 +296,7 @@ export function PublicStorePage() {
     fetchStoreData();
   }, [storeSlug, db, showError]);
 
-  // --- Search Logic (Unchanged) ---
+  // --- Search Logic ---
   useEffect(() => {
     if (searchQuery.trim() === '') { setSuggestions([]); } 
     else {
@@ -309,7 +308,7 @@ export function PublicStorePage() {
 
   const filteredProducts = useMemo(() => {
     return products.filter(product => {
-      const matchesCategory = selectedCategory === 'All' || (product.category === selectedCategory); // Category objects have 'name', but product has category string.
+      const matchesCategory = selectedCategory === 'All' || (product.category === selectedCategory); 
       const matchesSearch = product.name.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
@@ -510,7 +509,7 @@ export function PublicStorePage() {
         db={db}
         showError={showError}
         showSuccess={showSuccess}
-        sendSystemNotification={sendSystemNotification} // Pass this!
+        sendSystemNotification={sendSystemNotification} 
       />
       
       <NotifyMeModal
@@ -518,7 +517,6 @@ export function PublicStorePage() {
         onClose={() => setIsNotifyModalOpen(false)}
         product={notifyProduct}
         onSubmit={async (email) => {
-             // Implement notification logic here if needed, or use the modal's internal logic
              showSuccess("You'll be notified!");
              setIsNotifyModalOpen(false);
         }}

@@ -1,4 +1,4 @@
-// src/SettingsPage.jsx
+// src/pages/SettingsPage.jsx
 import React from 'react';
 import { NavLink, Outlet, useOutletContext } from 'react-router-dom';
 import { Settings, User } from 'lucide-react';
@@ -43,7 +43,6 @@ export function SettingsPage() {
         <div className="lg:col-span-1">
           <div className="card p-0 overflow-hidden">
             <nav className="py-2 space-y-1">
-              {/* --- FIX: Correct NavLink paths --- */}
               <SettingsNavLink to="/dashboard/settings/general" icon={Settings}>
                 General Store
               </SettingsNavLink>

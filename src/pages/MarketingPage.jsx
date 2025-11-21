@@ -1,9 +1,11 @@
-// src/components/dashboard/MarketingPage.jsx
+// src/pages/MarketingPage.jsx
+
 import React from 'react';
 import { Tab } from '@headlessui/react';
 import { Percent, Instagram, Mail, Megaphone, Lock } from 'lucide-react';
-import { DiscountCodesManager } from './marketing/DiscountCodesManager.jsx';
-import { AiCaptionGenerator } from './marketing/AiCaptionGenerator.jsx';
+// FIX: Updated paths
+import { DiscountCodesManager } from '../components/dashboard/marketing/DiscountCodesManager.jsx';
+import { AiCaptionGenerator } from '../components/dashboard/marketing/AiCaptionGenerator.jsx';
 
 export function MarketingPage() {
   const tools = [

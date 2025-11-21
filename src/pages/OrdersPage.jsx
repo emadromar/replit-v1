@@ -1,20 +1,31 @@
-// src/OrdersPage.jsx
+// src/pages/OrdersPage.jsx
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { collection, onSnapshot, query, orderBy, doc, updateDoc,limit } from 'firebase/firestore';
+import { collection, onSnapshot, query, orderBy, doc, updateDoc, limit } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
-import { useOutletContext } from 'react-router-dom';
-import { useNotifications } from './contexts/NotificationContext.jsx';
+// FIX: Added useSearchParams
+import { useOutletContext, useSearchParams } from 'react-router-dom';
 
-// --- NEW IMPORTS ---
-import { OrderList } from './components/orders/OrderList.jsx';
-import { OrderDetailModal } from './components/orders/OrderDetailModal.jsx';
-import { sanitizePhoneForWhatsApp } from './utils/phoneUtils.js';
+import { useNotifications } from '../contexts/NotificationContext.jsx';
+import { OrderList } from '../components/orders/OrderList.jsx';
+import { OrderDetailModal } from '../components/orders/OrderDetailModal.jsx';
+import { sanitizePhoneForWhatsApp } from '../utils/phoneUtils.js';
 
 export function OrdersPage() {
   const { user, store, services, showError, showSuccess, onOpenUpgradeModal } = useOutletContext();
   const { db } = services;
   const { sendSystemNotification } = useNotifications();
+  
+  // FIX: Capture query params
+  const [searchParams] = useSearchParams();
+  // FIX: Set initial filter based on URL param (defaults to 'ALL' if empty)
+  const initialStatus = searchParams.get('status') || 'ALL';
+
+  const [orders, setOrders] = useState([]);
+  const [selectedOrder, setSelectedOrder] = useState(null);
+  const [orderStatusFilter, setOrderStatusFilter] = useState(initialStatus);
+  const [orderDateFilter, setOrderDateFilter] = useState('all');
+  const [isLoading, setIsLoading] = useState(true); // Added loading state
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     const storeId = user?.uid;
@@ -40,43 +51,36 @@ export function OrdersPage() {
   };
 
   const handleWhatsAppReviewRequest = (order) => {
-  if (!order || !order.customerPhone) {
-    showError("This order has no customer phone number.");
-    return;
-  }
+    if (!order || !order.customerPhone) {
+        showError("This order has no customer phone number.");
+        return;
+    }
 
-  const customerName = order.customerName || 'Valued Customer';
-  const storeName = store.name || 'our store';
+    const customerName = order.customerName || 'Valued Customer';
+    const storeName = store.name || 'our store';
+    const cleanPhone = sanitizePhoneForWhatsApp(order.customerPhone);
+    const message = `Hi ${customerName}! This is ${storeName}. We see your order was delivered. We hope you love it!\n\nIf you have a moment, could you send a quick review? Your feedback means a lot to us.\n\n(مرحباً ${customerName}! معك ${storeName}. نتمنى أن طلبك قد وصل.\n\nإذا عندك دقيقة، ممكن تبعتلنا رأيك؟ رأيك بهمنا كتير.)`;
+    const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
 
-  // --- FIX START: Use the sanitizer ---
-  const cleanPhone = sanitizePhoneForWhatsApp(order.customerPhone);
-  // --- FIX END ---
-
-  const message = `Hi ${customerName}! This is ${storeName}. We see your order was delivered. We hope you love it!\n\nIf you have a moment, could you send a quick review? Your feedback means a lot to us.\n\n(مرحباً ${customerName}! معك ${storeName}. نتمنى أن طلبك قد وصل.\n\nإذا عندك دقيقة، ممكن تبعتلنا رأيك؟ رأيك بهمنا كتير.)`;
-
-  const whatsappUrl = `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
-
-  window.open(whatsappUrl, '_blank');
-  showSuccess("Opening WhatsApp to request review...");
-};
-
-  const [orders, setOrders] = useState([]);
-  const [selectedOrder, setSelectedOrder] = useState(null);
-  const [orderStatusFilter, setOrderStatusFilter] = useState('ALL');
-  const [orderDateFilter, setOrderDateFilter] = useState('all');
+    window.open(whatsappUrl, '_blank');
+    showSuccess("Opening WhatsApp to request review...");
+  };
 
   // Fetch orders
   useEffect(() => {
     if (!user || !db) return;
     const storeId = user.uid;
     const ordersRef = collection(db, 'stores', storeId, 'orders');
-    const q = query(ordersRef, orderBy('createdAt', 'desc'), limit(50));
+    
+    const q = query(ordersRef, orderBy('createdAt', 'desc'), limit(20));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
         setOrders(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+        setIsLoading(false);
       }, (error) => {
         console.error('Orders listener error:', error);
         showError('Failed to load orders.');
+        setIsLoading(false);
       }
     );
     return () => unsubscribe();
@@ -137,6 +141,7 @@ export function OrdersPage() {
           onDateFilterChange={setOrderDateFilter}
           totalOrdersCount={orders.length}
           onOpenUpgradeModal={onOpenUpgradeModal}
+          isLoading={isLoading}
         />
       </div>
 
