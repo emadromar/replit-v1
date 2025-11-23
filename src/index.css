@@ -7,19 +7,18 @@
     @apply font-sans bg-gray-50 text-gray-800 antialiased;
   }
   
-  /* 1. GLOBAL INPUT: The "Silicon Valley" Soft Focus */
+  /* FIX: Refined Input - "Silicon Valley" feel */
   .input {
     @apply block w-full px-4 py-2.5 border border-gray-300 rounded-lg shadow-sm text-body bg-white;
-    @apply focus:outline-none focus:border-primary-500 focus:ring-4 focus:ring-primary-500/20 transition-all duration-200;
+    @apply focus:outline-none focus:border-primary-500 focus:ring-2 focus:ring-primary-500/30 transition-all duration-200; /* Reduced ring thickness and opacity */
     @apply placeholder-gray-400 disabled:bg-gray-50 disabled:text-gray-500 disabled:cursor-not-allowed;
   }
 }
 
 @layer components {
-  /* 2. GLOBAL CARD: Consistent Padding & Radius */
+  /* FIX: Global Card - Standardized Shadow */
   .card {
-    /* p-5 on mobile (compact), p-6 on desktop (breathing room) */
-    @apply bg-white rounded-xl border border-gray-200 shadow-DEFAULT p-5 md:p-6;
+    @apply bg-white rounded-xl border border-gray-200 shadow-sm p-5 md:p-6;
   }
   
   .card-header {
@@ -30,75 +29,61 @@
      @apply transition-all duration-200 hover:shadow-md hover:border-primary-300 cursor-pointer;
   }
 
-  /* --- BUTTON SYSTEM --- */
-
-  /* 3. PRIMARY BUTTON: Vibrant & Tactile */
+  /* BUTTON SYSTEM */
   .btn-primary {
     @apply inline-flex items-center justify-center px-6 py-2.5 rounded-lg font-semibold text-white transition-all duration-200;
-    /* Robust Fix: Using arbitrary value for shadow to prevent config errors */
-    @apply shadow-[0_4px_14px_0_rgba(109,40,217,0.3)];
-    @apply bg-primary-700 hover:bg-primary-800 hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm;
-    @apply focus:outline-none focus:ring-4 focus:ring-primary-500/20;
+    @apply shadow-primary bg-primary-700 hover:bg-primary-800 hover:-translate-y-0.5 active:translate-y-0 active:shadow-sm;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/30;
     @apply disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0 disabled:shadow-none;
   }
   
-  /* Small version */
   .btn-primary-sm {
      @apply inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-sm font-medium text-white shadow-sm transition-all;
      @apply bg-primary-700 hover:bg-primary-800;
-     @apply focus:outline-none focus:ring-4 focus:ring-primary-500/20;
+     @apply focus:outline-none focus:ring-2 focus:ring-primary-500/30;
      @apply disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
-  /* 4. SECONDARY BUTTON */
   .btn-secondary {
     @apply inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-semibold text-gray-700 shadow-sm transition-all duration-200;
     @apply bg-white hover:bg-gray-50 border border-gray-300 hover:border-gray-400;
-    @apply focus:outline-none focus:ring-4 focus:ring-gray-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-gray-200;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
   }
   
-  /* Small version */
   .btn-secondary-sm {
     @apply inline-flex items-center justify-center px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 shadow-sm transition-all;
     @apply bg-white hover:bg-gray-50 border border-gray-300;
-    @apply focus:outline-none focus:ring-4 focus:ring-gray-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-gray-200;
     @apply disabled:opacity-50 disabled:cursor-not-allowed;
   }
   
-  /* 5. DANGER BUTTON */
   .btn-secondary-danger {
     @apply inline-flex items-center justify-center px-3 py-2 rounded-lg font-semibold text-gray-700 shadow-sm transition-all;
     @apply bg-white hover:bg-red-50 hover:text-red-600 border border-gray-300 hover:border-red-200;
-    @apply focus:outline-none focus:ring-4 focus:ring-red-500/20;
+    @apply focus:outline-none focus:ring-2 focus:ring-red-500/20;
   }
   
-  /* 6. LOCKED BUTTON */
   .btn-locked {
     @apply inline-flex items-center justify-center px-4 py-2 rounded-lg font-semibold text-primary-700 shadow-sm transition-all;
     @apply bg-primary-50 hover:bg-primary-100 border border-primary-100;
-    @apply focus:outline-none focus:ring-4 focus:ring-primary-500/20;
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500/20;
   }
 
-  /* Utilities */
-  .scrollbar-hide::-webkit-scrollbar {
-      display: none;
-  }
-  .scrollbar-hide {
-      -ms-overflow-style: none;
-      scrollbar-width: none;
-  }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+  
+  /* Custom Scrollbar for lists */
+  .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+  .custom-scrollbar::-webkit-scrollbar-track { background: #f1f1f1; }
+  .custom-scrollbar::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
 
-  /* Mobile-only horizontal scroll mask */
   .mask-linear-fade-mobile {
     mask-image: linear-gradient(to right, black 85%, transparent 100%);
     -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
   }
-
   @media (min-width: 768px) {
-    .mask-linear-fade-mobile {
-      mask-image: none;
-      -webkit-mask-image: none;
-    }
+    .mask-linear-fade-mobile { mask-image: none; -webkit-mask-image: none; }
   }
 }

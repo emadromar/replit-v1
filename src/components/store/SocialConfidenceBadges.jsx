@@ -1,7 +1,6 @@
 // src/components/store/SocialConfidenceBadges.jsx
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { ShieldCheck, Users, Truck, Lock, ArrowRight, Loader2 } from 'lucide-react';
+import { ShieldCheck, Users, Truck } from 'lucide-react';
 import { useFirebaseServices } from '../../contexts/FirebaseContext';
 import { httpsCallable } from 'firebase/functions';
 
@@ -17,12 +16,15 @@ export function SocialConfidenceBadges({ storeId, storeName, currentPlanId }) {
     const functions = services?.functions;
     
     const [trustedCount, setTrustedCount] = useState(0);
-    const [isDataReady, setIsDataReady] = useState(false); // Tracks whether fetch attempt is complete
+    const [isDataReady, setIsDataReady] = useState(false);
     
     const isBasicOrPro = currentPlanId === 'basic' || currentPlanId === 'pro';
 
     useEffect(() => {
-        if (!isBasicOrPro || !functions) return;
+        if (!isBasicOrPro || !functions) {
+            setIsDataReady(true);
+            return;
+        }
 
         const fetchCount = async () => {
             try {
@@ -38,32 +40,25 @@ export function SocialConfidenceBadges({ storeId, storeName, currentPlanId }) {
             } catch (error) {
                 console.error("Error fetching trusted count:", error);
             } finally {
-                setIsDataReady(true); // Mark ready, even if count is 0
+                setIsDataReady(true);
             }
         };
 
         fetchCount();
     }, [functions, storeId, currentPlanId, isBasicOrPro, storeName]);
 
-    // --- LOCKED STATE (Free Plan Pain on Public Page) ---
+    // FIX: If Free Plan, show NOTHING to avoid "Public Shame".
+    // Alternatively, show a generic static "Secure Shopping" badge so it doesn't look empty.
     if (currentPlanId === 'free') {
         return (
-            <div className="bg-gray-100 p-4 rounded-lg flex justify-between items-center border border-gray-200 mt-4">
-                <div className="flex items-center text-sm text-gray-600">
-                    <Lock className="w-4 h-4 mr-2" />
-                    <span className="font-semibold">People don't buy from strangers. Fix that.</span>
-                </div>
-                <Link to="/pricing" className="text-xs font-semibold text-primary-700 hover:underline flex items-center">
-                    Unlock Trust Signals <ArrowRight className="w-3 h-3 ml-1" />
-                </Link>
+            <div className="mt-4 flex items-center space-x-2 text-sm text-gray-500">
+               <ShieldCheck className="w-4 h-4 text-gray-400" />
+               <span>Secure Shopping</span>
             </div>
         );
     }
     
-    // FIX: If data is not ready, return null (hide the component entirely)
-    if (!isDataReady) {
-        return null;
-    }
+    if (!isDataReady) return null;
 
     const badges = [
         { key: 'verified', count: 1 },

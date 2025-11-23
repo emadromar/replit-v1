@@ -1,163 +1,172 @@
 // src/components/orders/OrderList.jsx
 import React from 'react';
-import { ShoppingBag, SlidersHorizontal, Eye } from 'lucide-react';
+import { ShoppingBag, SlidersHorizontal, Eye, Download, Calendar, User, ChevronRight } from 'lucide-react';
 import { LockedFeatureTeaser } from '../shared/LockedFeatureTeaser.jsx';
 import * as XLSX from 'xlsx';
-import { Download } from 'lucide-react';
 import { CURRENCY_CODE } from '../../config.js';
 
 const getStatusClasses = (status) => {
   switch (status) {
-    case 'COMPLETED': return 'bg-alert-success/10 text-alert-success border border-alert-success/20';
-    case 'SHIPPED': return 'bg-blue-100 text-blue-800 border border-blue-200';
-    case 'CANCELLED': return 'bg-red-100 text-red-800 border border-red-200';
-    case 'PENDING': default: return 'bg-yellow-100 text-yellow-800 border border-yellow-200';
+    case 'COMPLETED': return 'bg-green-100 text-green-800 border-green-200';
+    case 'SHIPPED': return 'bg-blue-100 text-blue-800 border-blue-200';
+    case 'CANCELLED': return 'bg-red-100 text-red-800 border-red-200';
+    case 'PENDING': default: return 'bg-yellow-100 text-yellow-800 border-yellow-200';
   }
 };
 
 const StatusBadge = ({ status }) => (
-  <span className={`px-3 py-1 text-xs font-bold rounded-full ${getStatusClasses(status || 'PENDING')}`}>
+  <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold border ${getStatusClasses(status || 'PENDING')}`}>
     {status || 'PENDING'}
   </span>
 );
 
 const statusOptions = ['ALL', 'PENDING', 'SHIPPED', 'COMPLETED', 'CANCELLED'];
 
+// --- Sub-component: Mobile Order Card ---
+const MobileOrderCard = ({ order, onClick }) => (
+  <div 
+    onClick={() => onClick(order)}
+    className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:border-primary-300 transition-all cursor-pointer active:scale-[0.99]"
+  >
+    <div className="flex justify-between items-start mb-3">
+      <div>
+        <div className="flex items-center gap-2">
+          <span className="text-sm font-bold text-gray-900">#{order.id.slice(-6).toUpperCase()}</span>
+          <span className="text-xs text-gray-500">{order.createdAt?.toDate ? new Date(order.createdAt.toDate()).toLocaleDateString() : 'N/A'}</span>
+        </div>
+        <p className="text-sm text-gray-600 mt-0.5 flex items-center gap-1">
+          <User className="w-3 h-3" /> {order.customerName || 'Guest'}
+        </p>
+      </div>
+      <StatusBadge status={order.status} />
+    </div>
+    
+    <div className="flex justify-between items-center pt-3 border-t border-gray-100">
+      <p className="text-base font-bold text-gray-900">
+        {CURRENCY_CODE} {order.total?.toFixed(2) || '0.00'}
+      </p>
+      <div className="flex items-center text-primary-600 text-xs font-semibold">
+        View Details <ChevronRight className="w-3 h-3 ml-1" />
+      </div>
+    </div>
+  </div>
+);
+
 export function OrderList({
-  orders, handleUpdateOrderStatus, currentPlanId, statusFilter, onStatusFilterChange,
+  orders, currentPlanId, statusFilter, onStatusFilterChange,
   orderDateFilter, onDateFilterChange, totalOrdersCount, onViewDetails, onOpenUpgradeModal
 }) {
   const isFreePlan = currentPlanId === 'free';
   const isProPlan = currentPlanId === 'pro';
 
   const exportToExcel = () => {
-  if (orders.length === 0) return; 
-
-  const data = orders.map(order => ({
-    'Order ID': order.id.slice(-6).toUpperCase(),
-    'Date': order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : 'N/A',
-    'Customer Name': order.customerName || 'Guest',
-    'Phone': order.customerPhone || 'N/A',
-    'Total ({CURRENCY_CODE})': order.total || 0,
-    'Status': order.status || 'PENDING',
-    'Items': order.items ? order.items.map(i => `${i.quantity}x ${i.name}`).join(', ') : ''
-  }));
-
-  const ws = XLSX.utils.json_to_sheet(data);
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, "Orders");
-  XLSX.writeFile(wb, `Orders_Export_${new Date().toISOString().split('T')[0]}.xlsx`);
-};
+    if (orders.length === 0) return; 
+    const data = orders.map(order => ({
+      'Order ID': order.id.slice(-6).toUpperCase(),
+      'Date': order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : 'N/A',
+      'Customer': order.customerName || 'Guest',
+      'Total': order.total || 0,
+      'Status': order.status || 'PENDING',
+    }));
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Orders");
+    XLSX.writeFile(wb, `Orders_Export.xlsx`);
+  };
 
   return (
-    <div className="card h-full flex flex-col">
+    <div className="card h-full flex flex-col p-0 overflow-hidden bg-gray-50 md:bg-white border-0 md:border">
       {/* Header */}
-      <div className="flex flex-col md:flex-row justify-between md:items-center gap-4 mb-6 border-b border-gray-100 pb-4">
-        <h2 className="text-lg font-bold text-gray-900 flex items-center">
-            <ShoppingBag className="w-5 h-5 mr-2 text-gray-500"/> All Orders
-        </h2>
-        <button 
-          onClick={exportToExcel}
-          className="btn-secondary-sm flex items-center gap-2 w-full md:w-auto"
-        >
-          <Download className="w-4 h-4" />
-          <span className="hidden sm:inline">Export CSV</span>
-        </button>
-        
-        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-          {isProPlan ? (
-            <div className="w-full sm:w-auto">
-              <select
-                value={orderDateFilter}
-                onChange={(e) => onDateFilterChange(e.target.value)}
-                className="input py-1.5 text-sm w-full"
-              >
+      <div className="p-5 border-b border-gray-200 bg-white">
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+          <h2 className="text-lg font-bold text-gray-900 flex items-center">
+              <ShoppingBag className="w-5 h-5 mr-2 text-gray-500"/> 
+              Orders <span className="ml-2 text-sm font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">{orders.length}</span>
+          </h2>
+          
+          <div className="flex gap-2 overflow-x-auto pb-1 md:pb-0 scrollbar-hide">
+            <button onClick={exportToExcel} className="btn-secondary-sm flex items-center whitespace-nowrap">
+              <Download className="w-4 h-4 mr-2" /> Export
+            </button>
+            {!isFreePlan && (
+              <select value={statusFilter} onChange={(e) => onStatusFilterChange(e.target.value)} className="input py-1.5 text-sm w-auto">
+                {statusOptions.map(s => <option key={s} value={s}>{s === 'ALL' ? 'All Status' : s}</option>)}
+              </select>
+            )}
+            {isProPlan ? (
+              <select value={orderDateFilter} onChange={(e) => onDateFilterChange(e.target.value)} className="input py-1.5 text-sm w-auto">
                 <option value="all">All Time</option>
                 <option value="today">Today</option>
-                <option value="last7days">Last 7 Days</option>
+                <option value="last7days">7 Days</option>
               </select>
-            </div>
-          ) : !isFreePlan && (
-             <LockedFeatureTeaser title="Filter by Date" planName="Pro" onUpgrade={onOpenUpgradeModal} />
-          )}
-          
-          {!isFreePlan ? (
-            <div className="w-full sm:w-auto">
-              <select
-                id="order-status-filter"
-                value={statusFilter}
-                onChange={(e) => onStatusFilterChange(e.target.value)}
-                className="input py-1.5 text-sm w-full"
-              >
-                {statusOptions.map((status) => (
-                  <option key={status} value={status}>
-                    {status === 'ALL' ? 'All Statuses' : status}
-                  </option>
-                ))}
-              </select>
-            </div>
-          ) : null}
+            ) : !isFreePlan && (
+               <button onClick={onOpenUpgradeModal} className="btn-secondary-sm text-xs whitespace-nowrap border-dashed">
+                 Filter Date <span className="ml-1 text-[10px] px-1 bg-primary-100 text-primary-700 rounded">PRO</span>
+               </button>
+            )}
+          </div>
         </div>
       </div>
       
       {isFreePlan && (
-         <LockedFeatureTeaser
-            title="Order Filtering"
-            description="Upgrade to Basic to filter orders by status, or Pro to also filter by date."
-            icon={SlidersHorizontal}
-            planName="Basic"
-            onUpgrade={onOpenUpgradeModal}
-            className="mb-4"
-        />
+         <div className="p-4 bg-white"><LockedFeatureTeaser title="Order Filtering" planName="Basic" onUpgrade={onOpenUpgradeModal} /></div>
       )}
 
-      {!isFreePlan && (
-        <div className="mb-4 px-4 py-3 bg-gray-50 rounded-lg border border-gray-100 flex justify-between items-center">
-          <span className="text-xs font-bold text-gray-500 uppercase tracking-wide">Total Orders</span>
-          <p className="text-xl font-bold text-gray-900 tabular-nums">
-            {orders.length} <span className="text-sm font-normal text-gray-400">/ {totalOrdersCount}</span>
-          </p>
-        </div>
-      )}
-
-      <div className="flex-1 overflow-y-auto pr-2 space-y-3 min-h-[300px]">
+      <div className="flex-1 overflow-y-auto bg-gray-50 md:bg-white">
         {orders.length === 0 ? (
-          <div className="text-center py-16 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50/50">
-             <ShoppingBag className="w-12 h-12 mx-auto text-gray-300" />
-            <h3 className="mt-4 text-base font-semibold text-gray-900">No orders yet</h3>
-            <p className="text-gray-500 text-sm mt-1">
-              {statusFilter !== 'ALL' || (isProPlan && orderDateFilter !== 'all')
-                ? 'No orders match your filters.'
-                : 'When you get a new order, it will appear here.'}
-            </p>
+          <div className="flex flex-col items-center justify-center h-64 text-center p-6">
+             <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4"><ShoppingBag className="w-8 h-8 text-gray-300" /></div>
+             <h3 className="text-base font-semibold text-gray-900">No orders found</h3>
+             <p className="text-sm text-gray-500 mt-1">Your orders will appear here.</p>
           </div>
         ) : (
-          orders.map((order) => (
-            <div
-              key={order.id}
-              className="p-4 rounded-lg border border-gray-200 hover:border-primary-300 hover:shadow-sm transition-all cursor-pointer bg-white group"
-              onClick={() => onViewDetails(order)}
-            >
-                <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-                    <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 mb-1">
-                           <p className="font-semibold text-gray-900 truncate">{order.customerName}</p>
-                           <span className="text-xs text-gray-400 tabular-nums font-mono px-1.5 py-0.5 bg-gray-100 rounded">#{order.id.slice(-6).toUpperCase()}</span>
-                        </div>
-                        <p className="text-xs text-gray-500 tabular-nums">
-                            {order.createdAt?.toDate ? new Date(order.createdAt.toDate()).toLocaleString() : 'N/A'}
-                        </p>
-                    </div>
-                    <div className="flex items-center justify-between sm:justify-end gap-4 flex-shrink-0 w-full sm:w-auto border-t sm:border-t-0 pt-3 sm:pt-0 border-gray-100">
-                        <p className="font-bold text-gray-900 tabular-nums">{CURRENCY_CODE} {order.total?.toFixed(2) || '0.00'}</p>
-                        <div className="flex items-center gap-3">
-                           <StatusBadge status={order.status} />
-                           <Eye className="w-4 h-4 text-gray-300 group-hover:text-primary-600 transition-colors hidden sm:block" />
-                        </div>
-                    </div>
-                </div>
+          <>
+            {/* MOBILE: Stacked Cards */}
+            <div className="md:hidden space-y-3 p-4">
+              {orders.map(order => <MobileOrderCard key={order.id} order={order} onClick={onViewDetails} />)}
             </div>
-          ))
+
+            {/* DESKTOP: Proper Data Table */}
+            <div className="hidden md:block min-w-full align-middle">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Order ID</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th scope="col" className="relative px-6 py-3"><span className="sr-only">Actions</span></th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {orders.map((order) => (
+                    <tr 
+                      key={order.id} 
+                      onClick={() => onViewDetails(order)} 
+                      className="hover:bg-gray-50 cursor-pointer transition-colors group"
+                    >
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{order.id.slice(-6).toUpperCase()}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600 flex items-center gap-2">
+                        <div className="h-6 w-6 rounded-full bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs font-bold">
+                          {order.customerName?.charAt(0) || 'G'}
+                        </div>
+                        {order.customerName || 'Guest'}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <span className="flex items-center gap-1.5"><Calendar className="w-3.5 h-3.5" /> {order.createdAt?.toDate ? order.createdAt.toDate().toLocaleDateString() : '-'}</span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">{CURRENCY_CODE} {order.total?.toFixed(2)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap"><StatusBadge status={order.status} /></td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <span className="text-primary-600 group-hover:text-primary-800 flex items-center justify-end">View <Eye className="w-4 h-4 ml-1" /></span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </div>
     </div>

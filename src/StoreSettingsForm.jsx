@@ -4,13 +4,13 @@ import React, { useState, useEffect } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { httpsCallable } from 'firebase/functions';
-// FIX 1: Consolidated imports (removed duplicate Palette/Wand2 lines)
-import { Loader2, Upload, Sparkles, Lock, Zap, Palette, Store, Wand2 } from 'lucide-react';
+import { Upload, Sparkles, Lock, Zap, Palette, Store, LayoutTemplate } from 'lucide-react';
 import { Input } from './Forminput.jsx';
 import { ProductImage } from './ProductImage.jsx';
 import { LockedFeatureCard } from './components/shared/LockedFeatureCard.jsx'; 
+import { SmartSaveButton } from './components/shared/SmartSaveButton.jsx'; // NEW
 import { useOutletContext } from 'react-router-dom';
-import { CURRENCY_CODE } from './config.js'; // Ensure this is imported
+import { CURRENCY_CODE } from './config.js';
 
 // --- Helper ---
 const createSlug = (text) => {
@@ -22,6 +22,7 @@ export function StoreSettingsForm() {
   const { store, user, services, showError, showSuccess, onOpenUpgradeModal } = useOutletContext();
   const { db, storage, functions } = services; 
   
+  // Form State
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
@@ -29,17 +30,19 @@ export function StoreSettingsForm() {
   const [customPath, setCustomPath] = useState('');
   const [monthlyTarget, setMonthlyTarget] = useState('');
   
+  // UI State
   const [loading, setLoading] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false); // For SmartButton
   const [aiLoading, setAiLoading] = useState(false);
   const [uploadLoading, setUploadLoading] = useState(false);
-  const [themeMood, setThemeMood] = useState('Trustworthy');
-  
+  const [isDirty, setIsDirty] = useState(false); // Track unsaved changes
+
   const currentPlanId = store?.planId || 'free';
   const isFreePlan = currentPlanId === 'free';
-  const isBasicPlan = currentPlanId === 'basic';
   const isProPlan = currentPlanId === 'pro';
-  const hasBasic = isBasicPlan || isProPlan;
+  const hasBasic = currentPlanId === 'basic' || isProPlan;
 
+  // Initialize
   useEffect(() => {
     if (store) {
       setName(store.name || '');
@@ -51,6 +54,18 @@ export function StoreSettingsForm() {
     }
   }, [store]);
 
+  // Warn on exit if dirty
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
   const handleLogoUpload = async (file) => {
     if (!file) return;
     if (!storage || !user) { showError('Storage service is not available.'); return; }
@@ -60,7 +75,8 @@ export function StoreSettingsForm() {
       await uploadBytes(storageRef, file);
       const url = await getDownloadURL(storageRef);
       setLogoUrl(url);
-      showSuccess('Logo uploaded!');
+      setIsDirty(true);
+      showSuccess('Logo uploaded! Save to apply.');
     } catch (error) {
       showError(`Upload failed: ${error.message}`);
     } finally {
@@ -70,13 +86,13 @@ export function StoreSettingsForm() {
 
   const handleGenerateTheme = async () => {
     if (!name) return showError('Please enter a store name first');
-    // FIX 2: Use correct state setter (setAiLoading instead of setIsGenerating)
     setAiLoading(true); 
     try {
       const generateColor = httpsCallable(functions, 'generateBrandColor');
-      const result = await generateColor({ storeName: name, mood: themeMood }); 
+      const result = await generateColor({ storeName: name, mood: 'Trustworthy' }); 
       setThemeColor(result.data.color);
-      showSuccess(`Generated ${themeMood} theme!`);
+      setIsDirty(true);
+      showSuccess(`Generated theme color!`);
     } catch (error) {
       console.error('Theme Gen Error:', error);
       showError('Failed to generate theme');
@@ -93,6 +109,7 @@ export function StoreSettingsForm() {
       return;
     }
     setLoading(true);
+    setSaveSuccess(false);
     try {
       const parsedTarget = parseFloat(monthlyTarget) || 0;
       const storeRef = doc(db, 'stores', user.uid);
@@ -105,7 +122,8 @@ export function StoreSettingsForm() {
         monthlyTarget: hasBasic ? parsedTarget : 0,
       };
       await updateDoc(storeRef, storeData);
-      showSuccess('Store settings saved!');
+      setSaveSuccess(true);
+      setIsDirty(false);
     } catch (error) {
       showError(`Save failed: ${error.message}`);
     } finally {
@@ -116,28 +134,28 @@ export function StoreSettingsForm() {
   const presetColors = [ '#6D28D9', '#DB2777', '#E11D48', '#EA580C', '#EAB308', '#22C55E', '#14B8A6', '#0EA5E9', '#3B82F6', '#1F2937' ];
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto space-y-8 pb-12">
+    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto space-y-8 pb-24">
       
       {/* Card 1: Basic Info */}
       <div className="card p-6 space-y-6">
-        <h2 className="text-xl font-bold text-gray-900 flex items-center border-b pb-3">
+        <h2 className="card-header">
           <Store className="w-5 h-5 mr-2 text-primary-600" /> Store Information
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Input label="Store Name" value={name} onChange={setName} required maxLength={50} id="store-name" placeholder="e.g., My Awesome Shop" />
-          <Input label="Public Phone Number" value={phone} onChange={setPhone} maxLength={20} id="store-phone" placeholder="e.g., 079 123 4567" />
+          <Input label="Store Name" value={name} onChange={setName} required maxLength={50} id="store-name" placeholder="My Awesome Shop" onChangeCapture={() => setIsDirty(true)} />
+          <Input label="Public Phone Number" value={phone} onChange={setPhone} maxLength={20} id="store-phone" placeholder="079 123 4567" onChangeCapture={() => setIsDirty(true)} />
         </div>
       </div>
 
       {/* Card 2: Sales Target */}
       {hasBasic ? (
         <div className="card p-6 space-y-6">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center border-b pb-3">
+          <h2 className="card-header">
             <Zap className="w-5 h-5 mr-2 text-subscription-basic" /> Sales Target
           </h2>
           <div className="flex items-start gap-4">
             <div className="flex-1">
-              <Input label={`Monthly Revenue Goal (${CURRENCY_CODE})`} type="number" step="1" min="0" value={monthlyTarget} onChange={setMonthlyTarget} id="store-target" placeholder="e.g., 1000" />
+              <Input label={`Monthly Revenue Goal (${CURRENCY_CODE})`} type="number" step="1" min="0" value={monthlyTarget} onChange={setMonthlyTarget} id="store-target" placeholder="1000" onChangeCapture={() => setIsDirty(true)} />
               <p className="text-xs text-gray-500 mt-2">We'll track this on your dashboard to keep you motivated.</p>
             </div>
           </div>
@@ -149,7 +167,7 @@ export function StoreSettingsForm() {
       {/* Card 3: Customization */}
       {hasBasic ? (
         <div className="card p-6 space-y-6">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center border-b pb-3">
+          <h2 className="card-header">
             <Palette className="w-5 h-5 mr-2 text-primary-600" /> Branding & Look
           </h2>
           
@@ -160,7 +178,7 @@ export function StoreSettingsForm() {
               <div className="flex items-center gap-4">
                 <ProductImage src={logoUrl} alt="Store Logo" className="w-20 h-20 rounded-xl object-contain bg-gray-50 border border-gray-200 p-2" />
                 <div>
-                  <label htmlFor="logo-upload" className="btn-secondary-sm cursor-pointer flex items-center">
+                  <label htmlFor="logo-upload" className="btn-secondary-sm cursor-pointer flex items-center w-fit">
                     <Upload className="w-4 h-4 mr-2" />
                     {uploadLoading ? 'Uploading...' : 'Upload Logo'}
                   </label>
@@ -174,17 +192,15 @@ export function StoreSettingsForm() {
             <div className="space-y-3">
               <div className="flex justify-between items-center">
                 <label className="block text-sm font-medium text-gray-700">Theme Color</label>
-                {/* FIX 3: Corrected onClick handler name */}
-                <button type="button" onClick={handleGenerateTheme} disabled={aiLoading} className="text-xs flex items-center text-ai font-semibold hover:underline disabled:opacity-50">
-                  {aiLoading ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1" />}
-                  {aiLoading ? "Generating..." : "Ask AI to choose"}
+                <button type="button" onClick={handleGenerateTheme} disabled={aiLoading || !name} className="text-xs flex items-center text-primary-600 font-semibold hover:underline disabled:opacity-50 disabled:cursor-not-allowed">
+                  {aiLoading ? <span className="animate-pulse">Generating...</span> : <><Sparkles className="w-3 h-3 mr-1" /> Ask AI to choose</>}
                 </button>
               </div>
               <div className="flex items-center gap-3">
-                <input type="color" value={themeColor} onChange={(e) => setThemeColor(e.target.value)} className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer p-1 bg-white" />
+                <input type="color" value={themeColor} onChange={(e) => { setThemeColor(e.target.value); setIsDirty(true); }} className="w-12 h-12 rounded-lg border border-gray-300 cursor-pointer p-1 bg-white" />
                 <div className="flex flex-wrap gap-2">
                   {presetColors.map(color => (
-                    <button key={color} type="button" onClick={() => setThemeColor(color)} className={`w-6 h-6 rounded-full border ${themeColor.toLowerCase() === color.toLowerCase() ? 'ring-2 ring-offset-2 ring-primary-500 scale-110' : 'border-transparent'}`} style={{ backgroundColor: color }} />
+                    <button key={color} type="button" onClick={() => { setThemeColor(color); setIsDirty(true); }} className={`w-6 h-6 rounded-full border transition-transform ${themeColor.toLowerCase() === color.toLowerCase() ? 'ring-2 ring-offset-2 ring-primary-500 scale-110' : 'border-transparent hover:scale-110'}`} style={{ backgroundColor: color }} />
                   ))}
                 </div>
               </div>
@@ -198,7 +214,7 @@ export function StoreSettingsForm() {
       {/* Card 4: Custom Path */}
       {isProPlan ? (
         <div className="card p-6 space-y-6">
-          <h2 className="text-xl font-bold text-gray-900 flex items-center border-b pb-3">
+          <h2 className="card-header">
             <Lock className="w-5 h-5 mr-2 text-subscription-pro" /> Custom Store Link
           </h2>
           <div className="space-y-2">
@@ -210,8 +226,8 @@ export function StoreSettingsForm() {
               <input
                 type="text"
                 value={customPath}
-                onChange={(e) => setCustomPath(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, ''))}
-                className="flex-1 block w-full px-4 py-2.5 border border-gray-300 rounded-r-lg shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm font-mono"
+                onChange={(e) => { setCustomPath(e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '')); setIsDirty(true); }}
+                className="flex-1 block w-full px-4 py-2.5 border border-gray-300 rounded-r-lg shadow-sm focus:ring-primary-500 focus:border-primary-500 sm:text-sm font-mono outline-none"
                 placeholder="my-store-name"
               />
             </div>
@@ -219,14 +235,21 @@ export function StoreSettingsForm() {
           </div>
         </div>
       ) : (
-        <LockedFeatureCard title="Custom Store Link" description="Get a clean, professional URL for your store (e.g., webjor.live/my-brand)." icon={Lock} planName="Pro" onUpgrade={onOpenUpgradeModal} />
+        <LockedFeatureCard title="Custom Store Link" description="Get a clean, professional URL for your store (e.g., webjor.live/my-brand)." icon={LayoutTemplate} planName="Pro" onUpgrade={onOpenUpgradeModal} />
       )}
 
       {/* Sticky Save Button */}
-      <div className="fixed bottom-4 left-4 right-4 md:static md:block z-20 md:pt-4">
-         <button type="submit" disabled={loading || uploadLoading} className="btn-primary w-full md:w-auto md:px-8 shadow-lg md:shadow-sm">
-          {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : 'Save All Settings'}
-        </button>
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t border-gray-200 z-nav md:static md:bg-transparent md:border-0 md:p-0 md:z-auto">
+         <div className="max-w-3xl mx-auto flex items-center justify-between md:justify-end gap-4">
+            {isDirty && <span className="text-sm text-amber-600 font-medium hidden md:block">Unsaved changes</span>}
+            <SmartSaveButton 
+              isLoading={loading} 
+              isSuccess={saveSuccess} 
+              disabled={!isDirty && !loading} 
+              onClick={handleSubmit} 
+              className="w-full md:w-auto md:px-10 shadow-lg"
+            />
+         </div>
       </div>
     </form>
   );
