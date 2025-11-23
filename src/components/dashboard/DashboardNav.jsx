@@ -5,8 +5,8 @@ import { NavLink, Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getAuth, signOut } from 'firebase/auth';
 import { collection, query, orderBy, limit, onSnapshot, writeBatch, doc } from 'firebase/firestore';
-import { 
-  LayoutDashboard, LogOut, Bell, User, Globe, Settings, Package, ShoppingBag, 
+import {
+  LayoutDashboard, LogOut, Bell, User, Globe, Settings, Package, ShoppingBag,
   TrendingUp, Percent, Plus, X, Shield
 } from 'lucide-react';
 import { ProductImage } from '../../ProductImage.jsx';
@@ -16,30 +16,12 @@ import { AnimatePresence, motion } from 'framer-motion';
 // --- Desktop Nav Link ---
 const AppNavLink = ({ to, children }) => {
   return (
-    <NavLink
-      to={to}
-      end 
-      className={({ isActive }) =>
-        `group relative flex items-center px-4 py-2 mx-1 text-sm font-semibold transition-all duration-200 ${
-          isActive ? 'text-primary-700' : 'text-gray-600 hover:text-gray-900'
-        }`
-      }
+    <a
+      href={to}
+      className="group relative flex items-center px-4 py-2 mx-1 text-sm font-semibold text-gray-600 hover:text-gray-900 transition-all duration-200"
     >
-      {({ isActive }) => (
-        <>
-          {children}
-          {/* Active Indicator Line */}
-          {isActive && (
-            <motion.div 
-              layoutId="navUnderline"
-              className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-600 rounded-full"
-            />
-          )}
-          {/* Hover background */}
-          <div className={`absolute inset-0 rounded-lg opacity-0 transition-opacity duration-200 group-hover:opacity-100 ${isActive ? 'bg-primary-50/50' : 'bg-gray-50'}`} style={{ zIndex: -1 }} />
-        </>
-      )}
-    </NavLink>
+      {children}
+    </a>
   );
 };
 
@@ -49,8 +31,7 @@ const MobileNavLink = ({ to, icon: Icon, label }) => (
     to={to}
     end
     className={({ isActive }) =>
-      `flex flex-col items-center justify-center w-full h-full transition-colors duration-200 ${
-        isActive ? 'text-primary-600' : 'text-gray-400 hover:text-gray-600'
+      `flex flex-col items-center justify-center w-full h-full transition-colors duration-200 ${isActive ? 'text-primary-600' : 'text-gray-400 hover:text-gray-600'
       }`
     }
   >
@@ -74,8 +55,8 @@ export function DashboardNav({ store, user, db, showError, showSuccess, isAdmin 
   const [notifications, setNotifications] = useState([]);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  
-  const auth = getAuth(); 
+
+  const auth = getAuth();
 
   // Close dropdowns when clicking outside
   useEffect(() => {
@@ -90,7 +71,7 @@ export function DashboardNav({ store, user, db, showError, showSuccess, isAdmin 
   useEffect(() => {
     if (!user || !db) return;
     const notificationsRef = collection(db, "stores", user.uid, "notifications");
-    const q = query(notificationsRef, orderBy("createdAt", "desc"), limit(10)); 
+    const q = query(notificationsRef, orderBy("createdAt", "desc"), limit(10));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setNotifications(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
@@ -100,18 +81,18 @@ export function DashboardNav({ store, user, db, showError, showSuccess, isAdmin 
 
     return () => unsubscribe();
   }, [user, db]);
-  
+
   const unreadCount = notifications.filter(n => !n.read).length;
 
   const handleSignOut = async () => {
-    try { 
-      await signOut(auth); 
+    try {
+      await signOut(auth);
       window.location.href = '/';
-    } catch (error) { 
-      console.error("Sign out error:", error); 
+    } catch (error) {
+      console.error("Sign out error:", error);
     }
   };
-  
+
   const handleMarkAllRead = async () => {
     if (!db || !user || unreadCount === 0) return;
     try {
@@ -150,20 +131,20 @@ export function DashboardNav({ store, user, db, showError, showSuccess, isAdmin 
     basic: 'bg-subscription-basic/10',
     pro: 'bg-subscription-pro/10',
   }[currentPlan];
-  
+
 
   return (
     <>
       <nav className="bg-white border-b border-gray-200 sticky top-0 z-nav">
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            
+
             {/* Left Side: Store Name & Plan */}
             <div className="flex items-center space-x-4">
               <Link to="/dashboard" className="flex items-center gap-2 flex-shrink-0 group">
-                <ProductImage 
-                  src={store?.logoUrl} 
-                  alt={store?.name || 'Store'} 
+                <ProductImage
+                  src={store?.logoUrl}
+                  alt={store?.name || 'Store'}
                   className="h-9 w-9 rounded-lg object-contain bg-gray-50 p-1 border border-gray-200 group-hover:border-primary-300 transition-colors"
                 />
                 <div className="hidden sm:block">
@@ -196,7 +177,7 @@ export function DashboardNav({ store, user, db, showError, showSuccess, isAdmin 
                   <Bell className="w-5 h-5" />
                   {unreadCount > 0 && <span className="absolute top-1.5 right-1.5 h-2 w-2 rounded-full bg-red-500 ring-2 ring-white" />}
                 </button>
-                
+
                 {activeDropdown === 'notifications' && (
                   <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-2xl border border-gray-100 overflow-hidden z-dropdown" onClick={(e) => e.stopPropagation()}>
                     <div className="p-3 flex justify-between items-center border-b bg-gray-50/50">
@@ -210,7 +191,7 @@ export function DashboardNav({ store, user, db, showError, showSuccess, isAdmin 
                         notifications.map(n => (
                           <div key={n.id} className={`p-3 border-b last:border-0 text-sm hover:bg-gray-50 transition-colors ${n.read ? 'opacity-60' : 'bg-primary-50/30'}`}>
                             <p className="text-gray-800 leading-snug">{n.message}</p>
-                            <p className="text-xs mt-1 text-gray-400">{n.createdAt?.toDate ? new Date(n.createdAt.toDate()).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : 'Just now'}</p>
+                            <p className="text-xs mt-1 text-gray-400">{n.createdAt?.toDate ? new Date(n.createdAt.toDate()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}</p>
                           </div>
                         ))
                       )}
@@ -262,10 +243,10 @@ export function DashboardNav({ store, user, db, showError, showSuccess, isAdmin 
         <div className="flex justify-around items-end h-[60px] pb-1">
           <MobileNavLink to="/dashboard" icon={LayoutDashboard} label="Home" />
           <MobileNavLink to="/dashboard/orders" icon={ShoppingBag} label="Orders" />
-          
+
           {/* CENTRAL FAB */}
           <div className="relative -top-5">
-            <button 
+            <button
               onClick={toggleMobileMenu}
               className={`w-14 h-14 rounded-full shadow-primary flex items-center justify-center transition-transform active:scale-95 ${isMobileMenuOpen ? 'bg-gray-800 rotate-45' : 'bg-primary-600'}`}
             >
@@ -282,7 +263,7 @@ export function DashboardNav({ store, user, db, showError, showSuccess, isAdmin 
       <AnimatePresence>
         {isMobileMenuOpen && (
           <>
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-[65] md:hidden"
               onClick={() => setIsMobileMenuOpen(false)}

@@ -3,29 +3,28 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { collection, onSnapshot, query, orderBy, doc, updateDoc, limit } from 'firebase/firestore';
 import { Loader2 } from 'lucide-react';
-// FIX: Added useSearchParams
 import { useOutletContext, useSearchParams } from 'react-router-dom';
 
 import { useNotifications } from '../contexts/NotificationContext.jsx';
 import { OrderList } from '../components/orders/OrderList.jsx';
 import { OrderDetailModal } from '../components/orders/OrderDetailModal.jsx';
+import { ErrorState } from '../components/shared/ErrorState.jsx';
 import { sanitizePhoneForWhatsApp } from '../utils/phoneUtils.js';
 
 export function OrdersPage() {
   const { user, store, services, showError, showSuccess, onOpenUpgradeModal } = useOutletContext();
   const { db } = services;
   const { sendSystemNotification } = useNotifications();
-  
-  // FIX: Capture query params
+
   const [searchParams] = useSearchParams();
-  // FIX: Set initial filter based on URL param (defaults to 'ALL' if empty)
   const initialStatus = searchParams.get('status') || 'ALL';
 
   const [orders, setOrders] = useState([]);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [orderStatusFilter, setOrderStatusFilter] = useState(initialStatus);
   const [orderDateFilter, setOrderDateFilter] = useState('all');
-  const [isLoading, setIsLoading] = useState(true); // Added loading state
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
 
   const handleUpdateOrderStatus = async (orderId, newStatus) => {
     const storeId = user?.uid;
@@ -45,15 +44,15 @@ export function OrdersPage() {
           `Order ${orderId.slice(-6).toUpperCase()} has been marked as COMPLETED.`
         );
       }
-    } catch (error) { 
+    } catch (error) {
       showError(`Update failed: ${error.message}`);
     }
   };
 
   const handleWhatsAppReviewRequest = (order) => {
     if (!order || !order.customerPhone) {
-        showError("This order has no customer phone number.");
-        return;
+      showError("This order has no customer phone number.");
+      return;
     }
 
     const customerName = order.customerName || 'Valued Customer';
@@ -71,20 +70,28 @@ export function OrdersPage() {
     if (!user || !db) return;
     const storeId = user.uid;
     const ordersRef = collection(db, 'stores', storeId, 'orders');
-    
+
     const q = query(ordersRef, orderBy('createdAt', 'desc'), limit(20));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
-        setOrders(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-        setIsLoading(false);
-      }, (error) => {
-        console.error('Orders listener error:', error);
-        showError('Failed to load orders.');
-        setIsLoading(false);
-      }
+      setOrders(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      setLoadError(null);
+      setIsLoading(false);
+    }, (error) => {
+      console.error('Orders listener error:', error);
+      setLoadError(error.message);
+      setIsLoading(false);
+      showError('Failed to load orders.');
+    }
     );
     return () => unsubscribe();
   }, [user, db, showError]);
+
+  const handleRetry = () => {
+    setIsLoading(true);
+    setLoadError(null);
+    // The useEffect will re-run and attempt to fetch orders again
+  };
 
   // Filter Logic
   const filteredOrders = useMemo(() => {
@@ -121,28 +128,33 @@ export function OrdersPage() {
 
   if (!store) {
     return (
-        <div className="flex items-center justify-center h-screen">
-            <Loader2 className="w-12 h-12 animate-spin text-primary-600" />
-        </div>
+      <div className="flex items-center justify-center h-screen">
+        <Loader2 className="w-12 h-12 animate-spin text-primary-600" />
+      </div>
     );
   }
 
   return (
     <>
       <div className="max-w-7xl mx-auto p-4 md:p-8 pb-24 md:pb-8">
-        <OrderList
-          orders={filteredOrders}
-          onViewDetails={setSelectedOrder}
-          handleUpdateOrderStatus={handleUpdateOrderStatus}
-          currentPlanId={store?.planId || 'free'}
-          statusFilter={orderStatusFilter}
-          onStatusFilterChange={setOrderStatusFilter}
-          orderDateFilter={orderDateFilter}
-          onDateFilterChange={setOrderDateFilter}
-          totalOrdersCount={orders.length}
-          onOpenUpgradeModal={onOpenUpgradeModal}
-          isLoading={isLoading}
-        />
+        {loadError ? (
+          <ErrorState message={loadError} onRetry={handleRetry} />
+        ) : (
+          <OrderList
+            orders={filteredOrders}
+            onViewDetails={setSelectedOrder}
+            handleUpdateOrderStatus={handleUpdateOrderStatus}
+            currentPlanId={store?.planId || 'free'}
+            statusFilter={orderStatusFilter}
+            onStatusFilterChange={setOrderStatusFilter}
+            orderDateFilter={orderDateFilter}
+            onDateFilterChange={setOrderDateFilter}
+            totalOrdersCount={orders.length}
+            onOpenUpgradeModal={onOpenUpgradeModal}
+            isLoading={isLoading}
+            store={store}
+          />
+        )}
       </div>
 
       <OrderDetailModal
@@ -150,7 +162,7 @@ export function OrdersPage() {
         onClose={() => setSelectedOrder(null)}
         order={selectedOrder}
         handleUpdateOrderStatus={handleUpdateOrderStatus}
-        onWhatsAppReview={handleWhatsAppReviewRequest} 
+        onWhatsAppReview={handleWhatsAppReviewRequest}
       />
     </>
   );

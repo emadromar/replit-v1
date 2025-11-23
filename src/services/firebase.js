@@ -62,23 +62,23 @@ const isLocalhost = window.location.hostname === 'localhost' || window.location.
 const isReplit = !!import.meta.env.REPL_ID;
 
 // Only use emulators if we are purely local (not on Replit)
-if (isLocalhost && !isReplit) {
-  console.log('🔧 Localhost detected: Connecting to Firebase Emulators');
-  
-  // Auth Emulator
-  connectAuthEmulator(auth, 'http://127.0.0.1:9099');
-  
-  // Firestore Emulator
-  connectFirestoreEmulator(db, '127.0.0.1', 8080);
-  
-  // Storage Emulator
-  connectStorageEmulator(storage, '127.0.0.1', 9199);
-  
-  // Functions Emulator
-  connectFunctionsEmulator(functions, '127.0.0.1', 5001);
-} else {
-  console.log('☁️ Production Mode: Using live Firebase services');
-}
+// if (isLocalhost && !isReplit) {
+//   console.log('🔧 Localhost detected: Connecting to Firebase Emulators');
+
+//   // Auth Emulator
+//   connectAuthEmulator(auth, 'http://127.0.0.1:9099');
+
+//   // Firestore Emulator
+//   connectFirestoreEmulator(db, '127.0.0.1', 8080);
+
+//   // Storage Emulator
+//   connectStorageEmulator(storage, '127.0.0.1', 9199);
+
+//   // Functions Emulator
+//   connectFunctionsEmulator(functions, '127.0.0.1', 5001);
+// } else {
+//   console.log('☁️ Production Mode: Using live Firebase services');
+// }
 
 export { auth, db, storage, functions };
 export default app;
