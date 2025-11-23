@@ -16,22 +16,21 @@ import { CategoryModal } from '../CategoryModal.jsx';
 import { ProductImport } from '../ProductImport.jsx';
 import { PLAN_DETAILS } from '../config.js';
 import { ProductForm } from '../components/dashboard/ProductForm.jsx';
-import { LockedFeatureCard } from '../components/shared/LockedFeatureCard.jsx'; 
-import { AiMarketingModal } from '../components/dashboard/AiMarketingModal.jsx';
+import { LockedFeatureCard } from '../components/shared/LockedFeatureCard.jsx';
 import { ProductList } from '../components/products/ProductList.jsx';
-import { SlideOver } from '../components/shared/SlideOver.jsx'; // <-- NEW IMPORT
+import { SlideOver } from '../components/shared/SlideOver.jsx';
 
 export function ProductsPage() {
-  const { 
-    user, store, services, showError, showSuccess, 
-    sendSystemNotification, onOpenUpgradeModal 
+  const {
+    user, store, services, showError, showSuccess,
+    sendSystemNotification, onOpenUpgradeModal
   } = useOutletContext();
 
   const { db, storage, functions } = services;
-  
+
   const [products, setProducts] = useState([]);
   const [productsLoading, setProductsLoading] = useState(true);
-  
+
   const [editingProduct, setEditingProduct] = useState(null);
   const [showForm, setShowForm] = useState(false); // Controls the Drawer
   const [productSearchTerm, setProductSearchTerm] = useState('');
@@ -42,11 +41,6 @@ export function ProductsPage() {
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [brands, setBrands] = useState([]);
-  const [isAiModalOpen, setIsAiModalOpen] = useState(false); 
-  const [aiProduct, setAiProduct] = useState(null); 
-  const [aiCaptions, setAiCaptions] = useState([]);
-  const [isAiLoading, setIsAiLoading] = useState(false);
-  const [aiError, setAiError] = useState(null);
 
   // --- Actions ---
   const handleCreateCategory = async (categoryName) => {
@@ -80,7 +74,8 @@ export function ProductsPage() {
       await deleteDoc(categoryRef);
       showSuccess(`Category "${name}" deleted.`);
       if (selectedCategory === id) { setSelectedCategory('all'); }
-    } catch (error) { showError('Failed to delete category.');
+    } catch (error) {
+      showError('Failed to delete category.');
     } finally { setIsConfirmModalOpen(false); setCategoryToDelete(null); }
   };
 
@@ -90,15 +85,15 @@ export function ProductsPage() {
     const storeId = user.uid;
     const productsRef = collection(db, 'stores', storeId, 'products');
     const q = query(productsRef, orderBy('createdAt', 'desc'));
-    
+
     setProductsLoading(true);
-    
+
     const unsubscribe = onSnapshot(q, (snapshot) => {
       setProducts(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
       setProductsLoading(false);
-    }, (error) => { 
-        showError('Failed to load products.'); 
-        setProductsLoading(false);
+    }, (error) => {
+      showError('Failed to load products.');
+      setProductsLoading(false);
     });
     return () => unsubscribe();
   }, [store, db, showError]);
@@ -150,56 +145,23 @@ export function ProductsPage() {
   }, [products, selectedCategory, categories, productSearchTerm, productSort, store?.planId]);
 
   const handleEdit = (product) => {
-    setEditingProduct(product); 
+    setEditingProduct(product);
     setShowForm(true);
   };
   const handleAddNew = () => {
-    setEditingProduct(null); 
+    setEditingProduct(null);
     setShowForm(true);
   };
   const handleDone = () => {
-    setEditingProduct(null); 
+    setEditingProduct(null);
     setShowForm(false);
   };
   const handleSelectCategory = (id) => {
-    setSelectedCategory(id); 
-  };
-
-  const handleGenerateCaptions = async (product) => {
-    if (!product) return;
-    if (store.planId === 'free') {
-      showError("AI Marketing is a Basic/Pro feature. Please upgrade to use it.");
-      onOpenUpgradeModal();
-      setIsAiModalOpen(false);
-      return;
-    }
-    setIsAiLoading(true);
-    setAiError(null);
-    setAiCaptions([]);
-    try {
-      const generate = httpsCallable(functions, 'generateInstagramCaptions');
-      const result = await generate({ productName: product.name, storeName: store.name });
-      if (result.data && result.data.captions) {
-        setAiCaptions(result.data.captions);
-      } else {
-        throw new Error("No captions were returned.");
-      }
-    } catch (error) {
-      console.error("AI Generation Error:", error);
-      setAiError(error.message || "Failed to generate captions. Please try again.");
-    } finally {
-      setIsAiLoading(false);
-    }
-  };
-
-  const handleMarket = (product) => {
-    setAiProduct(product);
-    setIsAiModalOpen(true);
-    handleGenerateCaptions(product);
+    setSelectedCategory(id);
   };
 
   if (!store || !user) {
-    return ( 
+    return (
       <div className="flex items-center justify-center h-screen">
         <Loader2 className="w-12 h-12 animate-spin text-primary-600" />
       </div>
@@ -209,7 +171,7 @@ export function ProductsPage() {
   const currentPlanId = store?.planId || 'free';
   const isBasicPlan = currentPlanId === 'basic';
   const isProPlan = currentPlanId === 'pro';
-  
+
   const currentPlanDetails = PLAN_DETAILS[currentPlanId];
   const productLimit = currentPlanDetails?.limits?.products ?? 0;
   const canAddMoreProducts = products.length < productLimit;
@@ -221,46 +183,44 @@ export function ProductsPage() {
 
   return (
     <div className="max-w-screen-2xl mx-auto p-4 md:p-8">
-      
+
       {/* Mobile Horizontal Scroll for Categories */}
       {canUseCategories && (
         <div className="lg:hidden mb-6 overflow-x-auto pb-2 scrollbar-hide">
-           <div className="flex space-x-2">
-              <button
-                onClick={() => handleSelectCategory('all')}
-                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors shadow-sm ${
-                  selectedCategory === 'all' 
-                    ? 'bg-primary-600 text-white' 
-                    : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+          <div className="flex space-x-2">
+            <button
+              onClick={() => handleSelectCategory('all')}
+              className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors shadow-sm ${selectedCategory === 'all'
+                ? 'bg-primary-600 text-white'
+                : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
                 }`}
-              >
-                All Products
-              </button>
-              {categories.map((cat) => (
-                <button
-                  key={cat.id}
-                  onClick={() => handleSelectCategory(cat.id)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors shadow-sm ${
-                    selectedCategory === cat.id
-                      ? 'bg-primary-600 text-white'
-                      : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
+            >
+              All Products
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => handleSelectCategory(cat.id)}
+                className={`px-4 py-2 rounded-full text-sm font-medium whitespace-nowrap transition-colors shadow-sm ${selectedCategory === cat.id
+                  ? 'bg-primary-600 text-white'
+                  : 'bg-white border border-gray-200 text-gray-700 hover:bg-gray-50'
                   }`}
-                >
-                  {cat.name}
-                </button>
-              ))}
-              <button 
-                onClick={() => setIsCategoryModalOpen(true)}
-                className="px-3 py-2 rounded-full bg-primary-50 text-primary-700 text-sm font-medium whitespace-nowrap border border-primary-100 flex items-center"
               >
-                <Plus className="w-4 h-4 mr-1"/> New
+                {cat.name}
               </button>
-           </div>
+            ))}
+            <button
+              onClick={() => setIsCategoryModalOpen(true)}
+              className="px-3 py-2 rounded-full bg-primary-50 text-primary-700 text-sm font-medium whitespace-nowrap border border-primary-100 flex items-center"
+            >
+              <Plus className="w-4 h-4 mr-1" /> New
+            </button>
+          </div>
         </div>
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        
+
         {/* Sidebar */}
         <div className="lg:col-span-1 space-y-6">
           {/* Add Product Button */}
@@ -296,7 +256,7 @@ export function ProductsPage() {
               />
             )}
           </div>
-          
+
           {/* Bulk Import */}
           <div className="hidden lg:block">
             {canUseBulkImport ? (
@@ -331,7 +291,6 @@ export function ProductsPage() {
             showSuccess={showSuccess}
             onEdit={handleEdit}
             db={db}
-            onMarket={handleMarket}
             currentPlanId={currentPlanId}
             searchTerm={productSearchTerm}
             onSearchChange={setProductSearchTerm}
@@ -347,9 +306,8 @@ export function ProductsPage() {
       <button
         onClick={handleAddNew}
         disabled={!canAddMoreProducts}
-        className={`lg:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${
-          !canAddMoreProducts ? 'bg-gray-400 text-gray-200' : 'bg-primary-700 text-white'
-        }`}
+        className={`lg:hidden fixed bottom-20 right-4 z-30 w-14 h-14 rounded-full shadow-xl flex items-center justify-center transition-transform hover:scale-105 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed ${!canAddMoreProducts ? 'bg-gray-400 text-gray-200' : 'bg-primary-700 text-white'
+          }`}
         aria-label="Add Product"
         style={{ boxShadow: '0 4px 14px rgba(0,0,0,0.25)' }}
       >
@@ -359,7 +317,7 @@ export function ProductsPage() {
       {/* --- DRAWER FOR PRODUCT FORM --- */}
       <SlideOver isOpen={showForm} onClose={handleDone} maxWidth="max-w-2xl">
         <ProductForm
-          store={store} 
+          store={store}
           sendSystemNotification={sendSystemNotification}
           showError={showError}
           showSuccess={showSuccess}
@@ -372,7 +330,7 @@ export function ProductsPage() {
           productLimit={productLimit}
           categories={categories}
           brands={brands}
-          onOpenUpgradeModal={onOpenUpgradeModal} 
+          onOpenUpgradeModal={onOpenUpgradeModal}
         />
       </SlideOver>
 
@@ -389,17 +347,6 @@ export function ProductsPage() {
         onCancel={() => setIsConfirmModalOpen(false)}
         onConfirm={confirmDeleteCategory}
         confirmText="Delete"
-      />
-
-      <AiMarketingModal
-        isOpen={isAiModalOpen}
-        onClose={() => setIsAiModalOpen(false)}
-        productName={aiProduct?.name}
-        storeName={store?.name}
-        isLoading={isAiLoading}
-        error={aiError}
-        captions={aiCaptions}
-        onGenerate={() => handleGenerateCaptions(aiProduct)}
       />
     </div>
   );

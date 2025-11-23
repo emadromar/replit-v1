@@ -17,9 +17,8 @@ import { Tab } from '@headlessui/react';
 
 // Contexts & Config
 import { Input } from '../../Forminput.jsx';
-import { LockedFeatureCard } from '../shared/LockedFeatureCard.jsx'; 
+import { LockedFeatureCard } from '../shared/LockedFeatureCard.jsx';
 import { PLAN_DETAILS, CURRENCY_CODE } from '../../config.js';
-import { ProductAnalyzer } from './ProductAnalyzer.jsx';
 
 // Sub-components
 import { ImageUploader } from './product/ImageUploader.jsx';
@@ -43,7 +42,7 @@ export function ProductForm({
   const [imageFile, setImageFile] = useState(null);
   const [allowFileUpload, setAllowFileUpload] = useState(false);
   const [reviews, setReviews] = useState([]);
-  
+
   // Loading States
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -57,7 +56,7 @@ export function ProductForm({
 
   const aiLimits = {
     bgRemove: PLAN_DETAILS[currentPlanId]?.limits?.aiBgRemovals || 0,
-    bgRemoveUsed: 0, 
+    bgRemoveUsed: 0,
   };
   const canUseBgRemove = aiLimits.bgRemove > aiLimits.bgRemoveUsed;
 
@@ -94,7 +93,7 @@ export function ProductForm({
     }
     if (!functions) { showError('AI service is not available.'); return; }
     if (!name) { showError('Please enter a Product Name first.'); return; }
-    
+
     setAiLoading(true);
     try {
       const generateDesc = httpsCallable(functions, 'generateProductDescription');
@@ -173,9 +172,9 @@ export function ProductForm({
       const parsedStock = parseInt(stock, 10);
       const parsedCostPrice = parseFloat(costPrice) || 0;
       const parsedSalePrice = parseFloat(salePrice) || 0;
-      
+
       let finalImageUrl = imageUrl || null;
-      
+
       // Handle File Upload
       if (imageFile) {
         const timestamp = Date.now();
@@ -185,7 +184,7 @@ export function ProductForm({
         await uploadBytes(storageRef, imageFile);
         finalImageUrl = await getDownloadURL(storageRef);
       }
-      
+
       const productData = {
         name,
         price: parsedPrice,
@@ -202,7 +201,7 @@ export function ProductForm({
         brand: (isBasicPlan || isProPlan) ? brand.trim() : '',
         reviews: reviews,
       };
-      
+
       if (isEditing && product?.id) {
         const productRef = doc(db, 'stores', store.id, 'products', product.id);
         await updateDoc(productRef, productData);
@@ -213,14 +212,14 @@ export function ProductForm({
           createdAt: serverTimestamp(),
         });
       }
-      
+
       // Stock Notifications
       if ((isBasicPlan || isProPlan) && parsedStock > 0 && parsedStock <= 5) {
         sendSystemNotification(store.id, store.email, currentPlanId, 'stock', `Inventory Warning: Product **${name}** is low on stock (${parsedStock} remaining).`);
       } else if ((isBasicPlan || isProPlan) && parsedStock === 0) {
         sendSystemNotification(store.id, store.email, currentPlanId, 'stock_critical', `CRITICAL ALERT: Product **${name}** is now out of stock (0 remaining)!`);
       }
-      
+
       showSuccess(isEditing ? 'Product updated!' : 'Product added!');
       onDone();
     } catch (error) {
@@ -248,7 +247,7 @@ export function ProductForm({
           <X className="w-6 h-6" />
         </button>
       </div>
-      
+
       {!isEditing && !canAddMoreProducts && (
         <div className="p-4 m-6 bg-yellow-50 border border-yellow-200 rounded-lg text-center">
           <p className="text-sm font-medium text-yellow-800">
@@ -259,7 +258,7 @@ export function ProductForm({
           </button>
         </div>
       )}
-      
+
       <div className="overflow-y-auto flex-1">
         <Tab.Group>
           <Tab.List className="px-6 border-b border-gray-200 sticky top-0 bg-white z-10">
@@ -273,86 +272,144 @@ export function ProductForm({
 
           <Tab.Panels>
             {/* --- GENERAL PANEL --- */}
-            <Tab.Panel className="p-6 space-y-6">
-              <Input label="Product Name" value={name} onChange={setName} required maxLength={100} id="product-name" placeholder="e.g., Summer T-Shirt" />
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <Input label={`Price (${CURRENCY_CODE})`} type="number" step="0.01" min="0" value={price} onChange={setPrice} required id="product-price" placeholder="0.00" />
-                <Input label="Stock Quantity" type="number" step="1" min="0" value={stock} onChange={setStock} required id="product-stock" placeholder="0" />
-              </div>
-              
-              {/* AI Description - NEW IMPROVED STATE */}
-              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden relative group focus-within:ring-4 focus-within:ring-primary-500/20 focus-within:border-primary-500 transition-all">
-                 <div className="flex justify-between items-center p-3 bg-gray-50 border-b border-gray-100">
-                    <label htmlFor="product-description" className="block text-sm font-semibold text-gray-700">Product Description</label>
-                    {isProPlan ? (
-                      <button
-                        type="button"
-                        onClick={handleGenerateDescription}
-                        disabled={aiLoading || !name}
-                        className="flex items-center px-3 py-1.5 text-xs font-semibold rounded-md text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all"
-                      >
-                        {aiLoading ? <Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1.5" />}
-                        {aiLoading ? "Writing..." : "Auto-Write with AI"}
-                      </button>
-                    ) : (
-                      <span className="text-xs text-gray-400 flex items-center"><Lock className="w-3 h-3 mr-1" /> AI writing locked (Pro)</span>
-                    )}
-                  </div>
-                  
-                  {/* LOADING SKELETON OVERLAY */}
-                  {aiLoading && (
-                    <div className="absolute inset-0 top-[45px] bg-white/80 z-10 flex flex-col items-start justify-start p-4 space-y-3 animate-pulse">
-                       <div className="h-2.5 bg-indigo-100 rounded-full w-3/4"></div>
-                       <div className="h-2.5 bg-indigo-100 rounded-full w-full"></div>
-                       <div className="h-2.5 bg-indigo-100 rounded-full w-5/6"></div>
-                       <div className="h-2.5 bg-indigo-100 rounded-full w-4/5"></div>
-                    </div>
-                  )}
+            <Tab.Panel className="p-6 space-y-8">
+              {/* 1. Product Identity */}
+              <div className="space-y-6">
+                <Input
+                  label="Product Name"
+                  value={name}
+                  onChange={setName}
+                  required
+                  maxLength={100}
+                  id="product-name"
+                  placeholder="e.g., Premium Cotton T-Shirt"
+                  className="text-lg font-medium"
+                />
 
-                  <textarea 
-                    id="product-description" 
-                    value={description} 
-                    onChange={(e) => setDescription(e.target.value)} 
-                    rows={6}
-                    className="block w-full px-4 py-3 text-body border-0 focus:ring-0 resize-y placeholder-gray-300 outline-none"
-                    placeholder="Describe your product here..." 
-                    readOnly={aiLoading}
+                {/* EXTRACTED IMAGE UPLOADER - Moved to General Tab */}
+                <div className="space-y-2">
+                  <label className="block text-sm font-semibold text-gray-700">Product Image</label>
+                  <ImageUploader
+                    imageFile={imageFile}
+                    imageUrl={imageUrl}
+                    onFileChange={(e) => setImageFile(e.target.files[0])}
+                    onRemoveBackground={handleRemoveBackground}
+                    bgRemoveLoading={bgRemoveLoading}
+                    canUseBgRemove={canUseBgRemove}
+                    isLocked={isFreePlan}
+                    onUpgrade={onOpenUpgradeModal}
                   />
+                </div>
+              </div>
+
+              <hr className="border-gray-100" />
+
+              {/* 2. Pricing & Inventory */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <Input
+                  label={`Price (${CURRENCY_CODE})`}
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={price}
+                  onChange={setPrice}
+                  required
+                  id="product-price"
+                  placeholder="0.00"
+                />
+                <Input
+                  label="Stock Quantity"
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={stock}
+                  onChange={setStock}
+                  required
+                  id="product-stock"
+                  placeholder="0"
+                />
+              </div>
+
+              {/* 3. Description */}
+              <div className="bg-white border border-gray-200 rounded-xl overflow-hidden relative group focus-within:ring-4 focus-within:ring-primary-500/20 focus-within:border-primary-500 transition-all shadow-sm">
+                <div className="flex justify-between items-center p-3 bg-gray-50 border-b border-gray-100">
+                  <label htmlFor="product-description" className="block text-sm font-semibold text-gray-700">Description</label>
+                  {isProPlan ? (
+                    <button
+                      type="button"
+                      onClick={handleGenerateDescription}
+                      disabled={aiLoading || !name}
+                      className="flex items-center px-3 py-1.5 text-xs font-semibold rounded-md text-white bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 disabled:opacity-50 disabled:cursor-not-allowed shadow-sm transition-all"
+                    >
+                      {aiLoading ? <Loader2 className="w-3 h-3 mr-1.5 animate-spin" /> : <Sparkles className="w-3 h-3 mr-1.5" />}
+                      {aiLoading ? "Writing..." : "Auto-Write with AI"}
+                    </button>
+                  ) : (
+                    <span className="text-xs text-gray-400 flex items-center"><Lock className="w-3 h-3 mr-1" /> AI writing locked (Pro)</span>
+                  )}
+                </div>
+
+                {/* LOADING SKELETON OVERLAY */}
+                {aiLoading && (
+                  <div className="absolute inset-0 top-[45px] bg-white/80 z-10 flex flex-col items-start justify-start p-4 space-y-3 animate-pulse">
+                    <div className="h-2.5 bg-indigo-100 rounded-full w-3/4"></div>
+                    <div className="h-2.5 bg-indigo-100 rounded-full w-full"></div>
+                    <div className="h-2.5 bg-indigo-100 rounded-full w-5/6"></div>
+                    <div className="h-2.5 bg-indigo-100 rounded-full w-4/5"></div>
+                  </div>
+                )}
+
+                <textarea
+                  id="product-description"
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  rows={6}
+                  className="block w-full px-4 py-3 text-body border-0 focus:ring-0 resize-y placeholder-gray-300 outline-none"
+                  placeholder="Describe your product here..."
+                  readOnly={aiLoading}
+                />
               </div>
             </Tab.Panel>
-            
+
             {/* --- DETAILS PANEL --- */}
-            <Tab.Panel className="p-6 space-y-6">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <Input label="Cost Price (Optional)" type="number" step="0.01" min="0" value={costPrice} onChange={setCostPrice} id="product-cost-price" placeholder="e.g., 5.00" />
-                <Input label="Sale Price (Optional)" type="number" step="0.01" min="0" value={salePrice} onChange={setSalePrice} id="product-sale-price" placeholder="e.g., 8.00" />
+            <Tab.Panel className="p-6 space-y-8">
+              {/* Advanced Pricing */}
+              <div className="space-y-4">
+                <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">Advanced Pricing</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  <Input label="Cost Price (Optional)" type="number" step="0.01" min="0" value={costPrice} onChange={setCostPrice} id="product-cost-price" placeholder="e.g., 5.00" />
+                  <Input label="Sale Price (Optional)" type="number" step="0.01" min="0" value={salePrice} onChange={setSalePrice} id="product-sale-price" placeholder="e.g., 8.00" />
+                </div>
               </div>
+
+              <hr className="border-gray-100" />
 
               {/* Organization Section */}
               {(isBasicPlan || isProPlan) ? (
-                <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 space-y-5">
-                  <h3 className="text-base font-semibold text-gray-800 flex items-center">
-                     <Tag className="w-4 h-4 mr-2 text-gray-500"/> Sales & Organization
+                <div className="space-y-4">
+                  <h3 className="text-sm font-semibold text-gray-900 uppercase tracking-wider flex items-center gap-2">
+                    Organization
                   </h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <Input label="Sale Start Date" type="date" value={saleStartDate} onChange={setSaleStartDate} id="sale-start-date" />
-                    <Input label="Sale End Date" type="date" value={saleEndDate} onChange={setSaleEndDate} id="sale-end-date" />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                    <div>
-                      <label htmlFor="product-category" className="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
-                      <select id="product-category" value={category} onChange={(e) => setCategory(e.target.value)} className="input">
-                        <option value="">No category</option>
-                        {categories.map((cat) => ( <option key={cat.id} value={cat.name}>{cat.name}</option> ))}
-                      </select>
+                  <div className="bg-gray-50 p-5 rounded-xl border border-gray-200 space-y-5">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <Input label="Sale Start Date" type="date" value={saleStartDate} onChange={setSaleStartDate} id="sale-start-date" />
+                      <Input label="Sale End Date" type="date" value={saleEndDate} onChange={setSaleEndDate} id="sale-end-date" />
                     </div>
-                    <div>
-                      <label htmlFor="product-brand" className="block text-sm font-medium text-gray-700 mb-1.5">Brand</label>
-                      <select id="product-brand" value={brand} onChange={(e) => setBrand(e.target.value)} className="input">
-                        <option value="">No brand</option>
-                        {brands.map((b) => ( <option key={b.id} value={b.name}>{b.name}</option> ))}
-                      </select>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                      <div>
+                        <label htmlFor="product-category" className="block text-sm font-medium text-gray-700 mb-1.5">Category</label>
+                        <select id="product-category" value={category} onChange={(e) => setCategory(e.target.value)} className="input bg-white">
+                          <option value="">No category</option>
+                          {categories.map((cat) => (<option key={cat.id} value={cat.name}>{cat.name}</option>))}
+                        </select>
+                      </div>
+                      <div>
+                        <label htmlFor="product-brand" className="block text-sm font-medium text-gray-700 mb-1.5">Brand</label>
+                        <select id="product-brand" value={brand} onChange={(e) => setBrand(e.target.value)} className="input bg-white">
+                          <option value="">No brand</option>
+                          {brands.map((b) => (<option key={b.id} value={b.name}>{b.name}</option>))}
+                        </select>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -365,18 +422,6 @@ export function ProductForm({
                   onUpgrade={onOpenUpgradeModal}
                 />
               )}
-
-              {/* EXTRACTED IMAGE UPLOADER */}
-              <ImageUploader 
-                imageFile={imageFile}
-                imageUrl={imageUrl}
-                onFileChange={(e) => setImageFile(e.target.files[0])}
-                onRemoveBackground={handleRemoveBackground}
-                bgRemoveLoading={bgRemoveLoading}
-                canUseBgRemove={canUseBgRemove}
-                isLocked={isFreePlan}
-                onUpgrade={onOpenUpgradeModal}
-              />
 
               <div className="flex items-center pt-4 border-t border-gray-100">
                 <input
@@ -395,7 +440,7 @@ export function ProductForm({
             {/* --- REVIEWS PANEL --- */}
             <Tab.Panel className="p-6">
               {/* EXTRACTED REVIEW MANAGER */}
-              <ReviewManager 
+              <ReviewManager
                 reviews={reviews}
                 onAdd={handleAddReview}
                 onEdit={handleEditReview}
@@ -405,18 +450,6 @@ export function ProductForm({
           </Tab.Panels>
         </Tab.Group>
       </div>
-
-       {product?.id && ( 
-          <div className="p-6 border-t border-gray-100 bg-gray-50/50">
-              <ProductAnalyzer 
-                  product={product} 
-                  store={store} 
-                  onOpenUpgradeModal={onOpenUpgradeModal} 
-                  services={{ functions, db, storage }} 
-                  showError={showError}
-              />
-          </div>
-      )}       
 
       {/* Footer Buttons */}
       <div className="p-6 border-t border-gray-200 bg-white flex gap-4">
