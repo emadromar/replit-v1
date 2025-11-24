@@ -1,90 +1,69 @@
-// src/pages/PricingPage.jsx
-
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Check, ArrowRight, X, Sparkles, MessageSquare, Zap, TrendingUp } from 'lucide-react';
+import { Check, ArrowRight, X, Sparkles, MessageSquare, Zap, TrendingUp, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
-// FIX: Path update
-import { CURRENCY_CODE } from '../config.js';
+import { CURRENCY_CODE, PLAN_DETAILS, PRICING_FEATURES } from '../config.js';
 
 // --- CONFIGURATION ---
-const features = {
-  CORE: [
-    { name: 'Product Listings', Free: '5', Basic: '50', Pro: 'Unlimited' },
-    { name: 'Storefront Access', Free: 'Yes', Basic: 'Yes', Pro: 'Yes' },
-    { name: 'Order Management', Free: 'Yes', Basic: 'Yes', Pro: 'Yes' },
-  ],
-  SALES_GROWTH: [
-    { name: 'Customer Reviews on Store', Basic: true, Pro: true },
-    { name: 'AI Instagram Captions', Basic: true, Pro: true, icon: Sparkles },
-    { name: 'Product Categories & Brands', Basic: true, Pro: true },
-    { name: 'Sales Targets & Alerts', Basic: true, Pro: true, icon: Zap },
-    { name: 'AI Product Description Generator', Pro: true, icon: Sparkles },
-    { name: 'Advanced Sales Analytics', Pro: true, icon: TrendingUp },
-    { name: 'AI Sales Coach', Pro: true, icon: MessageSquare },
-    { name: 'Custom Store Link (e.g., /my-shop)', Pro: true },
-    { name: 'Bulk Product Import (CSV)', Pro: true },
-  ],
+const plans = Object.values(PLAN_DETAILS).map(plan => ({
+  ...plan,
+  billed: plan.priceLabel // Map config 'priceLabel' to UI 'billed'
+}));
+
+// Helper to inject icons based on feature names (since config.js is pure data)
+const injectIcons = (featureList) => {
+  return featureList.map(f => {
+    let icon = null;
+    if (f.name.includes('Instagram') || f.name.includes('AI')) icon = Sparkles;
+    if (f.name.includes('Analytics') || f.name.includes('Spy')) icon = TrendingUp;
+    if (f.name.includes('Coach') || f.name.includes('Neuromarketing')) icon = MessageSquare;
+    if (f.name.includes('Targets') || f.name.includes('Recovery')) icon = Zap;
+    return icon ? { ...f, icon } : f;
+  });
 };
 
-const plans = [
-  { 
-    id: 'free', 
-    name: 'Free', 
-    price: '0', 
-    billed: 'Always Free', 
-    description: 'The simplest way to start your e-commerce journey.', 
-    badge: null, 
-    // Gray button for Free
-    buttonColor: 'bg-gray-100 text-gray-900 hover:bg-gray-200' 
-  },
-  { 
-    id: 'basic', 
-    name: 'Basic', 
-    price: '5', 
-    billed: 'per month', 
-    description: 'Unlock core growth tools and remove limits.', 
-    badge: 'Most Popular', 
-    // Purple button for Basic
-    buttonColor: 'bg-primary-700 text-white hover:bg-primary-800' 
-  },
-  { 
-    id: 'pro', 
-    name: 'Pro', 
-    price: '15', 
-    billed: 'per month', 
-    description: 'Full AI power, automation, and advanced analytics for scaling.', 
-    badge: 'Recommended', 
-    // White button for Pro (high contrast)
-    buttonColor: 'bg-white text-primary-700 hover:bg-gray-50' 
-  },
-];
+const features = {
+  CORE: PRICING_FEATURES.CORE,
+  GROWTH_AI: injectIcons(PRICING_FEATURES.GROWTH_AI)
+};
 
-const checkIcon = (isAvailable, planId) => {
+const checkIcon = (value, planId) => {
   const isPro = planId === 'pro';
-  
-  if (isAvailable === true) {
+
+  // Explicit boolean checks
+  if (value === true) {
     return <Check className={`w-5 h-5 ${isPro ? 'text-primary-700' : 'text-alert-success'}`} />;
   }
-  if (isAvailable) {
-    return <span className={`text-sm font-bold ${isPro ? 'text-primary-700' : 'text-gray-700'}`}>{isAvailable}</span>;
+  if (value === false) {
+    return <X className="w-5 h-5 text-gray-300" />;
+  }
+  // String values (e.g., "5/mo", "Unlimited")
+  if (value) {
+    return <span className={`text-sm font-bold ${isPro ? 'text-primary-700' : 'text-gray-700'}`}>{value}</span>;
   }
   return <X className="w-5 h-5 text-gray-300" />;
 };
 
 const FeatureRow = ({ feature, plans }) => {
   const featureText = feature.name;
+  const featureDesc = feature.description;
   const Icon = feature.icon || Check;
 
   return (
     <li className="grid grid-cols-4 gap-4 py-3 border-b border-gray-100 last:border-b-0">
-      <div className="col-span-1 text-sm font-medium text-gray-700 flex items-center pr-4">
-        <Icon className="w-4 h-4 mr-2 text-primary-600 flex-shrink-0" />
-        {featureText}
+      <div className="col-span-1 pr-4">
+        <div className="flex items-center text-sm font-medium text-gray-700">
+          <Icon className="w-4 h-4 mr-2 text-primary-600 flex-shrink-0" />
+          {featureText}
+        </div>
+        {featureDesc && (
+          <p className="text-xs text-gray-400 mt-1 ml-6 leading-tight">{featureDesc}</p>
+        )}
       </div>
       {plans.map(plan => (
         <div key={plan.id} className="col-span-1 text-center flex items-center justify-center">
-          {checkIcon(feature[plan.name], plan.id)}
+          {/* Use plan.id to access the feature value from the config object */}
+          {checkIcon(feature[plan.id], plan.id)}
         </div>
       ))}
     </li>
@@ -96,7 +75,7 @@ export function PricingPage() {
     <div className="bg-white min-h-screen">
       <header className="bg-gray-50 py-16">
         <div className="max-w-4xl mx-auto text-center px-4">
-          <motion.h1 
+          <motion.h1
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-page text-gray-900 mb-4"
@@ -112,11 +91,11 @@ export function PricingPage() {
       <section className="py-16 md:py-24 max-w-7xl mx-auto px-4 lg:px-8">
         <div className="card overflow-visible">
           <div className="grid grid-cols-4 border-b border-gray-200">
-            <div className="col-span-1"></div> 
+            <div className="col-span-1"></div>
 
             {plans.map(plan => (
-              <div 
-                key={plan.id} 
+              <div
+                key={plan.id}
                 className={`col-span-1 p-6 text-center border-l border-gray-100 relative overflow-visible flex flex-col ${plan.id === 'pro' ? 'bg-primary-700 text-white shadow-lg' : 'bg-white text-gray-900'}`}
               >
                 {plan.badge && (
@@ -130,13 +109,13 @@ export function PricingPage() {
                 </div>
                 <p className={`text-sm ${plan.id === 'pro' ? 'text-primary-200' : 'text-gray-500'}`}>{plan.billed}</p>
                 <p className={`mt-2 text-sm flex-grow ${plan.id === 'pro' ? 'text-primary-100' : 'text-gray-600'}`}>{plan.description}</p>
-                
-                <Link 
-                  to="/signup" 
+
+                <Link
+                  to="/signup"
                   className={`mt-8 w-full py-3 px-4 rounded-xl font-bold text-sm flex items-center justify-center transition-all shadow-sm ${plan.buttonColor}`}
                 >
                   Get Started
-                  <ArrowRight className="w-4 h-4 ml-2"/>
+                  <ArrowRight className="w-4 h-4 ml-2" />
                 </Link>
               </div>
             ))}
@@ -152,12 +131,12 @@ export function PricingPage() {
           <div className="p-6 md:p-8 bg-white">
             <h4 className="text-sm font-bold text-gray-800 mb-3 uppercase tracking-wider">Growth & Automation</h4>
             <ul className="divide-y divide-gray-200">
-              {features.SALES_GROWTH.map((f, i) => <FeatureRow key={i} feature={f} plans={plans} />)}
+              {features.GROWTH_AI.map((f, i) => <FeatureRow key={i} feature={f} plans={plans} />)}
             </ul>
           </div>
         </div>
       </section>
-      
+
       <section className="py-16 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 lg:px-8">
           <h2 className="text-section text-gray-900 text-center mb-10">Frequently Asked Questions</h2>
@@ -168,13 +147,13 @@ export function PricingPage() {
               { question: "How does the AI work?", answer: "Our AI (powered by Google Gemini) automatically generates engaging product descriptions, marketing captions, and sales insights based on your product's name and category. This saves you hours of writing time." },
               { question: "What counts as a 'product' limit?", answer: "A product limit refers to the number of active products you can have visible in your inventory at any given time. Deleted products do not count toward the limit." },
             ].map((item, index) => (
-              <details 
-                key={index} 
+              <details
+                key={index}
                 className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm transition-all duration-300 open:bg-primary-50 open:border-primary-200"
               >
                 <summary className="flex items-center justify-between font-semibold text-gray-900 cursor-pointer text-base">
                   {item.question}
-                  <ArrowRight className="w-5 h-5 text-gray-500 transform transition-transform duration-300 group-open:rotate-90"/>
+                  <ArrowRight className="w-5 h-5 text-gray-500 transform transition-transform duration-300 group-open:rotate-90" />
                 </summary>
                 <p className="mt-4 text-gray-600 text-sm leading-relaxed border-t pt-4 border-gray-100">
                   {item.answer}

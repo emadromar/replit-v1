@@ -2,10 +2,11 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Sparkles, TrendingUp, Zap, MessageSquare, ArrowRight, 
-  ShieldAlert, Lock, Users, Timer 
+import {
+  Sparkles, TrendingUp, Zap, MessageSquare, ArrowRight,
+  ShieldAlert, Lock, Users, Timer
 } from 'lucide-react';
+import { PLAN_DETAILS, CURRENCY_CODE } from '../../config.js';
 
 export function UpgradeTeaserWidget({ currentPlanId, onOpenUpgradeModal }) {
   if (currentPlanId === 'pro') return null;
@@ -42,7 +43,7 @@ export function UpgradeTeaserWidget({ currentPlanId, onOpenUpgradeModal }) {
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-primary-900 via-primary-800 to-purple-900 text-white shadow-xl"
       whileHover={{ y: -5 }}
       transition={{ type: 'spring', stiffness: 300, damping: 20 }}
@@ -53,7 +54,7 @@ export function UpgradeTeaserWidget({ currentPlanId, onOpenUpgradeModal }) {
 
       <div className="relative p-6 sm:p-8">
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          
+
           {/* Text Content */}
           <div className="flex-1">
             <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm border mb-4 ${content.badgeColor}`}>
@@ -82,7 +83,7 @@ export function UpgradeTeaserWidget({ currentPlanId, onOpenUpgradeModal }) {
 
           {/* Action Button (Right side on desktop) */}
           <div className="w-full md:w-auto flex-shrink-0">
-             <button 
+            <button
               onClick={onOpenUpgradeModal}
               className="w-full flex items-center justify-center px-6 py-4 bg-white text-primary-900 font-bold rounded-xl hover:bg-gray-50 transition-all shadow-lg group whitespace-nowrap"
             >
@@ -90,7 +91,7 @@ export function UpgradeTeaserWidget({ currentPlanId, onOpenUpgradeModal }) {
               <ArrowRight className="w-4 h-4 ml-2 group-hover:translate-x-1 transition-transform" />
             </button>
             <p className="text-xs text-center text-primary-200 mt-3">
-              {isFree ? "Starting at 5 ${CURRENCY_CODE}/month" : "Starting at 15 ${CURRENCY_CODE}/month"}
+              {isFree ? `Starting at ${PLAN_DETAILS.basic.price} ${CURRENCY_CODE}/month` : `Starting at ${PLAN_DETAILS.pro.price} ${CURRENCY_CODE}/month`}
             </p>
           </div>
         </div>

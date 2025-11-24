@@ -1,7 +1,6 @@
 // src/common/UpgradeModal.jsx
 
 import React, { useState, useEffect, useRef } from 'react';
-// --- FIX: ADDED 'collection', 'query', 'where', 'getDocs' ---
 import {
   doc,
   addDoc,
@@ -12,11 +11,8 @@ import {
   getDocs,
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { httpsCallable } from 'firebase/functions'; // This isn't used, but it's okay
-import { X, Loader2, CheckCircle, AlertCircle, Upload } from 'lucide-react';
-import { CURRENCY_CODE } from '../config.js';
-// --- FIX: Corrected the path from ../../ to ../ ---
-import { PLAN_DETAILS } from '../config.js'; // <-- THIS WAS CHANGED
+import { X, Loader2, CheckCircle } from 'lucide-react';
+import { PLAN_DETAILS, CURRENCY_CODE } from '../config.js';
 
 export function UpgradeModal({
   isOpen,
@@ -42,8 +38,8 @@ export function UpgradeModal({
         currentPlanId === 'free'
           ? 'basic'
           : currentPlanId === 'basic'
-          ? 'pro'
-          : null
+            ? 'pro'
+            : null
       );
       checkPendingRequests();
     } else {
@@ -53,12 +49,11 @@ export function UpgradeModal({
       setHasPendingRequest(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
     }
-  }, [isOpen, currentPlanId, db, storeId, showError]); // Added dependencies
+  }, [isOpen, currentPlanId, db, storeId, showError]);
 
   const checkPendingRequests = async () => {
     if (!storeId || !db) return;
     try {
-      // --- These functions will now work ---
       const requestsRef = collection(db, 'stores', storeId, 'subscriptionRequests');
       const q = query(requestsRef, where('status', '==', 'pending_review'));
       const snapshot = await getDocs(q);
@@ -109,7 +104,6 @@ export function UpgradeModal({
       const fileName = `${storeId}-upgrade-${selectedPlanId}-${timestamp}-${safeFileName}`;
       const proofRef = ref(storage, `subscription_proofs/${storeId}/${fileName}`);
 
-      // Show a loading message, not an error
       showSuccess('Uploading proof... Do not close this.');
       await uploadBytes(proofRef, paymentProofFile);
       const paymentProofUrl = await getDownloadURL(proofRef);
@@ -170,8 +164,6 @@ export function UpgradeModal({
 
           {hasPendingRequest && (
             <div className="p-4">
-              {' '}
-              {/* Added padding */}
               <div
                 className="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-3 rounded-lg shadow-sm"
                 role="alert"
@@ -202,11 +194,10 @@ export function UpgradeModal({
                 {plansToShow.map(([id, details]) => (
                   <label
                     key={id}
-                    className={`flex items-start p-4 border rounded-md cursor-pointer transition ${
-                      selectedPlanId === id
+                    className={`flex items-start p-4 border rounded-md cursor-pointer transition ${selectedPlanId === id
                         ? 'bg-indigo-50 border-indigo-300 ring-1 ring-indigo-300'
                         : 'border-gray-300 hover:border-gray-400'
-                    }`}
+                      }`}
                   >
                     <input
                       type="radio"
@@ -222,7 +213,7 @@ export function UpgradeModal({
                         {details.name}
                       </span>
                       <span className="block text-sm text-indigo-600 font-medium">
-                        {details.price}
+                        {details.price} {CURRENCY_CODE} {details.priceLabel}
                       </span>
                       <ul className="text-xs text-gray-500 mt-1 list-disc list-inside space-y-0.5">
                         <li>
@@ -231,12 +222,11 @@ export function UpgradeModal({
                             : `Up to ${details.limits.products}`}{' '}
                           Products
                         </li>
-                        {details.limits.bulkImport && (
+                        {details.features.includes('Bulk Product Import') && (
                           <li>Bulk Import Enabled</li>
                         )}
-                        {details.limits.customPath && <li>Custom Path</li>}
-                        {details.limits.logo && <li>Store Logo</li>}
-                        <li>{details.limits.images} Image(s) per Product</li>
+                        {details.features.includes('Custom Domain Support') && <li>Custom Domain</li>}
+                        {details.features.includes('Social Proof Reviews') && <li>Social Proof</li>}
                       </ul>
                     </div>
                   </label>
@@ -253,7 +243,7 @@ export function UpgradeModal({
                 <p className="text-xs text-gray-700">
                   Please transfer{' '}
                   <strong>
-                    {PLAN_DETAILS[selectedPlanId]?.price.split('/')[0]} ${CURRENCY_CODE}
+                    {PLAN_DETAILS[selectedPlanId]?.price} {CURRENCY_CODE}
                   </strong>{' '}
                   via CLIQ to:
                 </p>

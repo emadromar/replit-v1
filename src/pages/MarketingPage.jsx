@@ -1,49 +1,18 @@
 // src/pages/MarketingPage.jsx
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Tab } from '@headlessui/react';
-import { Percent, Instagram, Mail, Megaphone, Lock, Zap, ChevronDown, Sparkles } from 'lucide-react';
-import { useOutletContext } from 'react-router-dom';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { Percent, Instagram, Mail, Megaphone, Zap, Sparkles, ArrowRight, ChevronDown } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 // Components
 import { DiscountCodesManager } from '../components/dashboard/marketing/DiscountCodesManager.jsx';
 import { AiCaptionGenerator } from '../components/dashboard/marketing/AiCaptionGenerator.jsx';
-import { ProductAnalyzer } from '../components/dashboard/ProductAnalyzer.jsx';
+import { ProductAnalyzerSection } from '../components/dashboard/marketing/ProductAnalyzerSection.jsx';
+import { AbandonedCartRecovery } from '../components/dashboard/marketing/AbandonedCartRecovery.jsx';
 
 export function MarketingPage() {
-  const { store, services, showError, onOpenUpgradeModal } = useOutletContext();
-  const { db } = services;
-
-  // Product State for Analyzer
-  const [products, setProducts] = useState([]);
-  const [selectedProductId, setSelectedProductId] = useState('');
-  const [loadingProducts, setLoadingProducts] = useState(true);
-
-  // Fetch Products
-  useEffect(() => {
-    if (!store?.id || !db) return;
-
-    const productsRef = collection(db, 'stores', store.id, 'products');
-    const q = query(productsRef, orderBy('createdAt', 'desc'));
-
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const fetchedProducts = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setProducts(fetchedProducts);
-      if (fetchedProducts.length > 0 && !selectedProductId) {
-        setSelectedProductId(fetchedProducts[0].id);
-      }
-      setLoadingProducts(false);
-    }, (error) => {
-      console.error("Error fetching products:", error);
-      setLoadingProducts(false);
-    });
-
-    return () => unsubscribe();
-  }, [store?.id, db]);
-
-  const selectedProduct = products.find(p => p.id === selectedProductId);
+  const [showBannerDetails, setShowBannerDetails] = useState(false);
 
   const tools = [
     {
@@ -51,109 +20,103 @@ export function MarketingPage() {
       icon: Zap,
       color: 'text-amber-500',
       bgColor: 'bg-amber-50',
-      component: (
-        <div className="space-y-6">
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">Analyze Product Performance</h3>
-                <p className="text-sm text-gray-500">Get AI-driven insights on why your product might not be selling.</p>
-              </div>
-              <div className="relative min-w-[250px]">
-                <select
-                  value={selectedProductId}
-                  onChange={(e) => setSelectedProductId(e.target.value)}
-                  className="w-full pl-4 pr-10 py-2.5 bg-gray-50 border border-gray-200 rounded-xl appearance-none focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition-all font-medium text-gray-700 cursor-pointer hover:bg-gray-100"
-                  disabled={loadingProducts || products.length === 0}
-                >
-                  {products.length === 0 ? (
-                    <option>No products found</option>
-                  ) : (
-                    products.map(p => (
-                      <option key={p.id} value={p.id}>{p.name}</option>
-                    ))
-                  )}
-                </select>
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 pointer-events-none" />
-              </div>
-            </div>
-
-            {products.length === 0 && !loadingProducts && (
-              <div className="text-center p-6 bg-amber-50 rounded-xl border border-amber-100 text-amber-800">
-                <Sparkles className="w-6 h-6 mx-auto mb-2 opacity-50" />
-                <p className="font-medium">You need to add products before using the analyzer.</p>
-              </div>
-            )}
-
-            {selectedProduct && (
-              <ProductAnalyzer
-                product={selectedProduct}
-                store={store}
-                services={services}
-                onOpenUpgradeModal={onOpenUpgradeModal}
-                showError={showError}
-              />
-            )}
-          </div>
-        </div>
-      )
+      component: <ProductAnalyzerSection />
     },
     { name: 'Discount Codes', icon: Percent, color: 'text-green-500', bgColor: 'bg-green-50', component: <DiscountCodesManager /> },
     { name: 'Social AI', icon: Instagram, color: 'text-pink-500', bgColor: 'bg-pink-50', component: <AiCaptionGenerator /> },
-    { name: 'Email Campaigns', icon: Mail, locked: true },
-    { name: 'Ad Creatives', icon: Megaphone, locked: true },
+    { name: 'Cart Recovery', icon: Mail, color: 'text-blue-500', bgColor: 'bg-blue-50', component: <AbandonedCartRecovery /> },
   ];
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8 pb-24">
-      {/* Header Section */}
-      <div className="relative mb-10 p-8 rounded-3xl bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900 text-white overflow-hidden shadow-xl">
-        <div className="absolute top-0 right-0 w-64 h-64 bg-white opacity-5 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
-        <div className="absolute bottom-0 left-0 w-48 h-48 bg-primary-500 opacity-10 rounded-full blur-3xl -ml-10 -mb-10 pointer-events-none"></div>
+      {/* Banner */}
+      <button
+        onClick={() => setShowBannerDetails(!showBannerDetails)}
+        className="w-full text-left relative mb-10 p-8 md:p-10 rounded-3xl bg-gradient-to-r from-[#6020A0] via-[#7B2CBF] to-[#9D4EDD] text-white overflow-hidden shadow-2xl shadow-purple-200 transition-transform active:scale-[0.99] focus:outline-none group"
+      >
+        <div className="absolute top-0 right-0 w-96 h-96 bg-white opacity-10 rounded-full blur-3xl -mr-32 -mt-32 pointer-events-none group-hover:opacity-20 transition-opacity"></div>
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-pink-500 opacity-10 rounded-full blur-3xl -ml-20 -mb-20 pointer-events-none"></div>
 
         <div className="relative z-10">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2 tracking-tight">Marketing Hub</h1>
-          <p className="text-gray-400 text-lg max-w-2xl">
-            Supercharge your sales with AI-powered marketing tools. Create content, analyze performance, and optimize your strategy.
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-3 tracking-tight flex items-center gap-3">
+                Marketing Hub
+                <Sparkles className="w-6 h-6 text-yellow-300 animate-pulse" />
+              </h1>
+              <p className="text-purple-100 text-lg max-w-2xl leading-relaxed font-medium">
+                Your all-in-one command center for growth. Click to learn more.
+              </p>
+            </div>
+            <div className={`p-2 rounded-full bg-white/10 backdrop-blur-sm transition-transform duration-300 ${showBannerDetails ? 'rotate-180' : ''}`}>
+              <ChevronDown className="w-6 h-6 text-white" />
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {showBannerDetails && (
+              <motion.div
+                initial={{ height: 0, opacity: 0, marginTop: 0 }}
+                animate={{ height: 'auto', opacity: 1, marginTop: 24 }}
+                exit={{ height: 0, opacity: 0, marginTop: 0 }}
+                className="overflow-hidden"
+              >
+                <ul className="grid grid-cols-1 md:grid-cols-3 gap-4 text-purple-50">
+                  <li className="flex items-center gap-3 bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10">
+                    <div className="p-2 bg-white/20 rounded-lg"><Zap className="w-5 h-5 text-yellow-300" /></div>
+                    <span className="font-medium">Fix Sales Leaks</span>
+                  </li>
+                  <li className="flex items-center gap-3 bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10">
+                    <div className="p-2 bg-white/20 rounded-lg"><Percent className="w-5 h-5 text-green-300" /></div>
+                    <span className="font-medium">Run Flash Sales</span>
+                  </li>
+                  <li className="flex items-center gap-3 bg-white/10 p-4 rounded-xl backdrop-blur-sm border border-white/10">
+                    <div className="p-2 bg-white/20 rounded-lg"><Instagram className="w-5 h-5 text-pink-300" /></div>
+                    <span className="font-medium">Viral Content AI</span>
+                  </li>
+                </ul>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
-      </div>
+      </button>
 
       <Tab.Group>
-        <Tab.List className="flex space-x-2 overflow-x-auto pb-4 mb-6 no-scrollbar">
-          {tools.map((tool) => (
-            <Tab
-              key={tool.name}
-              disabled={tool.locked}
-              className={({ selected }) =>
-                `group relative flex items-center px-6 py-3.5 rounded-2xl text-sm font-semibold transition-all whitespace-nowrap outline-none focus:ring-0 ${selected
-                  ? 'text-white shadow-lg shadow-primary-500/20'
-                  : tool.locked
-                    ? 'text-gray-400 cursor-not-allowed opacity-60 bg-gray-50 border border-gray-100'
-                    : 'text-gray-600 hover:text-gray-900 hover:bg-white bg-gray-50 border border-gray-200 hover:border-gray-300'
-                }`
-              }
-            >
-              {({ selected }) => (
-                <>
-                  {selected && (
-                    <motion.div
-                      layoutId="activeTab"
-                      className="absolute inset-0 bg-gray-900 rounded-2xl"
-                      initial={false}
-                      transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
-                    />
-                  )}
-                  <span className="relative z-10 flex items-center gap-2.5">
-                    <tool.icon className={`w-4 h-4 ${selected ? 'text-primary-400' : tool.color}`} />
-                    {tool.name}
-                    {tool.locked && <Lock className="w-3 h-3 opacity-50 ml-1" />}
-                  </span>
-                </>
-              )}
-            </Tab>
-          ))}
-        </Tab.List>
+        {/* Mobile scroll indicator */}
+        <div className="relative">
+          <Tab.List className="flex overflow-x-auto pb-4 mb-8 scrollbar-hide gap-3">
+            {tools.map((tool) => (
+              <Tab
+                key={tool.name}
+                className={({ selected }) =>
+                  `group relative flex items-center px-6 py-3.5 rounded-2xl text-sm font-bold transition-all whitespace-nowrap outline-none focus:ring-0 ${selected
+                    ? 'text-white shadow-lg shadow-gray-900/10'
+                    : 'text-gray-500 hover:text-gray-900 hover:bg-white bg-transparent border border-transparent hover:border-gray-200'
+                  }`
+                }
+              >
+                {({ selected }) => (
+                  <>
+                    {selected && (
+                      <motion.div
+                        layoutId="activeTab"
+                        className="absolute inset-0 bg-gray-900 rounded-2xl"
+                        initial={false}
+                        transition={{ type: "spring", bounce: 0.2, duration: 0.6 }}
+                      />
+                    )}
+                    <span className="relative z-10 flex items-center gap-2.5">
+                      <tool.icon className={`w-4 h-4 ${selected ? 'text-primary-400' : tool.color}`} />
+                      {tool.name}
+                    </span>
+                  </>
+                )}
+              </Tab>
+            ))}
+          </Tab.List>
+          {/* Mobile scroll fade indicator */}
+          <div className="absolute right-0 top-0 bottom-4 w-16 bg-gradient-to-l from-gray-50 via-gray-50/80 to-transparent pointer-events-none md:hidden" />
+        </div>
 
         <Tab.Panels>
           <AnimatePresence mode="wait">
@@ -167,22 +130,56 @@ export function MarketingPage() {
                 exit={{ opacity: 0, y: -10 }}
                 transition={{ duration: 0.2 }}
               >
-                {tool.locked ? (
-                  <div className="h-80 flex flex-col items-center justify-center bg-gray-50 rounded-3xl border-2 border-dashed border-gray-200 text-gray-400">
-                    <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-                      <tool.icon className="w-8 h-8 opacity-20" />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-500">Coming Soon</h3>
-                    <p className="text-sm text-gray-400 mt-1">This powerful tool is under development.</p>
-                  </div>
-                ) : (
-                  tool.component
-                )}
+                {tool.component}
               </Tab.Panel>
             ))}
           </AnimatePresence>
         </Tab.Panels>
       </Tab.Group>
+
+      {/* Enhanced Roadmap Section */}
+      <div className="mt-24">
+        <div className="flex items-center gap-3 mb-8">
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+          <span className="text-sm font-bold text-gray-400 uppercase tracking-widest flex items-center gap-2">
+            <Sparkles className="w-4 h-4 text-primary-500" />
+            Coming Soon
+          </span>
+          <div className="h-px flex-1 bg-gradient-to-r from-transparent via-gray-200 to-transparent"></div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Email Campaigns Card */}
+          <div className="group relative overflow-hidden bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-blue-50 rounded-full blur-3xl -mr-16 -mt-16 transition-opacity group-hover:opacity-100 opacity-50"></div>
+
+            <div className="relative z-10">
+              <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                <Mail className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Email Campaigns</h3>
+              <p className="text-gray-500 leading-relaxed">
+                Automated email sequences that recover abandoned carts and welcome new customers.
+              </p>
+            </div>
+          </div>
+
+          {/* Ad Creatives Card */}
+          <div className="group relative overflow-hidden bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300">
+            <div className="absolute top-0 right-0 w-32 h-32 bg-purple-50 rounded-full blur-3xl -mr-16 -mt-16 transition-opacity group-hover:opacity-100 opacity-50"></div>
+
+            <div className="relative z-10">
+              <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
+                <Megaphone className="w-6 h-6 text-purple-600" />
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Ad Creatives</h3>
+              <p className="text-gray-500 leading-relaxed">
+                Generate high-converting ad copy and visuals for Facebook and Instagram ads in seconds.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
